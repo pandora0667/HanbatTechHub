@@ -25,4 +25,4 @@ export const THROTTLE_LIMIT = {
     TTL: 60, // 1분
     LIMIT: 100, // 100회
   },
-} as const; 
+} as const;

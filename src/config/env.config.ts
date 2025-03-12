@@ -19,4 +19,4 @@ export const swaggerConfig = registerAs('swagger', () => ({
     '한밭대학교 모바일융합공학과를 위한 통합 정보 API 서비스',
   version: process.env.SWAGGER_VERSION ?? '1.0',
   path: process.env.SWAGGER_PATH ?? 'api-docs',
-})); 
+}));

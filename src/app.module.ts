@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MenuModule } from './modules/menu/menu.module';
 import { NoticeModule } from './modules/notice/notice.module';
+import { BlogModule } from './modules/blog/blog.module';
+import { AIModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { NoticeModule } from './modules/notice/notice.module';
     }),
     MenuModule,
     NoticeModule,
+    BlogModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,6 +11,9 @@
 - 공지사항 상세 정보 조회 (첨부파일 포함)
 - 특정 날짜의 식단 정보 조회 (점심/저녁)
 - 일주일 간의 식단 정보 조회
+- 주요 IT 기업 기술 블로그 포스트 조회
+  - 무신사, 네이버 D2, 토스, 뱅크샐러드, 긱뉴스
+  - 메타, 넷플릭스, 구글, 아마존, 마켓컬리, 카카오엔터프라이즈
 
 ## 개발 환경
 
@@ -70,6 +73,82 @@ $ pnpm run start:prod
 - `GET /api/v1/menus/weekly` - 일주일 간의 식단 조회
   - 쿼리 파라미터: `date` (시작 날짜, YYYY-MM-DD 형식, 선택사항)
   - 예시: `curl -X GET "http://localhost:3000/api/v1/menus/weekly?date=2025-03-15"`
+
+### 기술 블로그 API
+
+- `GET /api/v1/blogs/companies` - 지원하는 기업 목록 조회
+  - 응답: 기술 블로그를 제공하는 기업 목록
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/blogs/companies"`
+  - 기본 응답: 전체 기업 목록 (페이지네이션 없음)
+
+- `GET /api/v1/blogs` - 전체 기업의 기술 블로그 포스트 조회
+  - 쿼리 파라미터:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `limit`: 페이지당 항목 수 (기본값: 10)
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/blogs?page=1&limit=3"`
+  - 기본 응답: 최신순으로 정렬된 10개의 포스트
+  - 정렬 기준: 작성일 기준 내림차순 (최신순)
+
+
+- `GET /api/v1/blogs/companies/:companyId` - 특정 기업의 기술 블로그 포스트 조회
+  - 파라미터: `companyId` (기업 ID, 예: MUSINSA, NAVER_D2, TOSS 등)
+  - 쿼리 파라미터:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `limit`: 페이지당 항목 수 (기본값: 10)
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/blogs/companies/MUSINSA?page=1&limit=3"`
+  - 기본 응답: 해당 기업의 최신순 10개 포스트
+  - 정렬 기준: 작성일 기준 내림차순 (최신순)
+
+### 페이지네이션 정보
+
+모든 페이지네이션이 적용된 API는 다음과 같은 메타 정보를 포함합니다:
+- `totalCount`: 전체 아이템 수
+- `currentPage`: 현재 페이지 번호
+- `totalPages`: 전체 페이지 수
+- `hasNextPage`: 다음 페이지 존재 여부
+- `hasPreviousPage`: 이전 페이지 존재 여부
+
+### 기술 블로그 응답 형식
+
+```json
+{
+  "items": [
+    {
+      "title": "GitHub Copilot 도입 후기",
+      "link": "https://example.com/post/1",
+      "date": "2024-03-15",
+      "company": "MUSINSA",
+      "description": "GitHub Copilot을 도입하고 경험한 개발 생산성 향상에 대한 이야기"
+    }
+    // ... 추가 항목
+  ],
+  "meta": {
+    "totalCount": 98,
+    "currentPage": 1,
+    "totalPages": 10,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}
+```
+
+### 에러 응답
+
+잘못된 요청이나 서버 오류 발생 시 다음과 같은 형식으로 응답합니다:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid page number",
+  "error": "Bad Request"
+}
+```
+
+주요 에러 코드:
+- `400`: 잘못된 요청 (페이지 번호나 limit이 유효하지 않은 경우)
+- `404`: 리소스를 찾을 수 없음 (존재하지 않는 기업 ID 등)
+- `429`: 요청이 너무 많음 (Rate limit 초과)
+- `500`: 서버 내부 오류
 
 ## 응답 형식
 
@@ -144,13 +223,20 @@ src/
 │   │   └── notice.module.ts
 │   │
 │   ├── menu/             # 식단 관련 모듈
-│       ├── dto/          # 데이터 전송 객체
-│       ├── menu.controller.ts
-│       ├── menu.service.ts
-│       └── menu.module.ts
-│
-├── app.module.ts         # 메인 모듈
-└── main.ts               # 애플리케이션 진입점
+│   │   ├── dto/          # 데이터 전송 객체
+│   │   ├── menu.controller.ts
+│   │   ├── menu.service.ts
+│   │   └── menu.module.ts
+│   │
+│   ├── blog/             # 기술 블로그 관련 모듈
+│   │   ├── dto/          # 데이터 전송 객체
+│   │   ├── interfaces/   # 인터페이스 정의
+│   │   ├── blog.controller.ts
+│   │   ├── blog.service.ts
+│   │   └── blog.module.ts
+│   │
+│   ├── app.module.ts     # 메인 모듈
+│   └── main.ts           # 애플리케이션 진입점
 ```
 
 ## 확장 계획
