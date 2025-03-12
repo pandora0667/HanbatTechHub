@@ -20,4 +20,4 @@ export class MenuResponseDto {
 
 export class MenuListResponseDto {
   menus: MenuResponseDto[];
-} 
+}

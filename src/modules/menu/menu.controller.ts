@@ -1,11 +1,15 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common';
 import { MenuService } from './menu.service';
-import { MenuRequestDto, MenuResponseDto, MenuListResponseDto } from './dto/menu.dto';
+import {
+  MenuRequestDto,
+  MenuResponseDto,
+  MenuListResponseDto,
+} from './dto/menu.dto';
 
 @Controller('menus')
 export class MenuController {
   private readonly logger = new Logger(MenuController.name);
-  
+
   constructor(private readonly menuService: MenuService) {}
 
   /**
@@ -13,7 +17,9 @@ export class MenuController {
    * @param menuRequestDto 날짜 요청 DTO
    */
   @Get()
-  async getMenuByDate(@Query() menuRequestDto: MenuRequestDto): Promise<MenuResponseDto> {
+  async getMenuByDate(
+    @Query() menuRequestDto: MenuRequestDto,
+  ): Promise<MenuResponseDto> {
     this.logger.log(`식단 정보 요청: 날짜=${menuRequestDto.date || '오늘'}`);
     return this.menuService.getMenuByDate(menuRequestDto.date);
   }
@@ -23,8 +29,12 @@ export class MenuController {
    * @param menuRequestDto 날짜 요청 DTO
    */
   @Get('weekly')
-  async getWeeklyMenu(@Query() menuRequestDto: MenuRequestDto): Promise<MenuListResponseDto> {
-    this.logger.log(`주간 식단 정보 요청: 시작 날짜=${menuRequestDto.date || '오늘'}`);
+  async getWeeklyMenu(
+    @Query() menuRequestDto: MenuRequestDto,
+  ): Promise<MenuListResponseDto> {
+    this.logger.log(
+      `주간 식단 정보 요청: 시작 날짜=${menuRequestDto.date || '오늘'}`,
+    );
     const menus = await this.menuService.getWeeklyMenu(menuRequestDto.date);
     return { menus };
   }

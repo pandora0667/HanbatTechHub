@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug'],
   });
-  
+
   // 전역 ValidationPipe 설정 - 페이지네이션 파라미터 무시하도록 수정
   app.useGlobalPipes(
     new ValidationPipe({
@@ -18,16 +18,16 @@ async function bootstrap() {
       forbidNonWhitelisted: false, // 비활성화하여 정의되지 않은 속성 허용
     }),
   );
-  
+
   // CORS 설정
   app.enableCors();
-  
+
   // HTTP 보안 헤더 설정
   app.use(helmet());
-  
+
   // API 프리픽스 설정
   app.setGlobalPrefix('api/v1');
-  
+
   // Swagger 설정
   const config = new DocumentBuilder()
     .setTitle('한밭대학교 교직원 식단 API')
@@ -36,7 +36,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
-  
+
   // 서버 시작
   const port = process.env.PORT || 3000;
   await app.listen(port);
