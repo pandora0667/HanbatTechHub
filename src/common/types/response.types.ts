@@ -16,4 +16,4 @@ export interface ErrorResponse {
   error: string;
   timestamp: string;
   path: string;
-} 
+}

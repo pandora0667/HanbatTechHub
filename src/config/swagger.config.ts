@@ -11,9 +11,10 @@ export function setupSwagger(app: INestApplication): void {
     .setVersion(process.env.SWAGGER_VERSION || '1.0')
     .addTag('notices', '공지사항 관련 API')
     .addTag('menu', '교직원 식단 관련 API')
+    .addTag('blogs', '기술 블로그 관련 API')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(process.env.SWAGGER_PATH || 'api-docs', app, document);
-} 
+}
