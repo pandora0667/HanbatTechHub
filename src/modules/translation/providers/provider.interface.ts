@@ -1,4 +1,4 @@
-export interface AIProvider {
+export interface TranslationProvider {
   translate(text: string): Promise<string>;
 }
 
@@ -12,4 +12,4 @@ export interface TranslationConfig {
   model: string;
   apiKey: string;
   baseURL: string;
-}
+} 

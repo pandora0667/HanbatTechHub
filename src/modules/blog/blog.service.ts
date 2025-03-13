@@ -7,7 +7,7 @@ import {
   BlogResponseDto,
   CompanyListResponseDto,
 } from './dto/blog-response.dto';
-import { TranslationService } from '../ai/translation/translation.service';
+import { TranslationService } from '../translation/services/translation.service';
 
 @Injectable()
 export class BlogService {

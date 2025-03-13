@@ -44,19 +44,19 @@ export const TECH_BLOG_RSS = {
     url: 'https://feeds.feedburner.com/geeknews-feed',
   },
   META: {
-    name: 'Meta Engineering',
+    name: 'Meta',
     url: 'https://engineering.fb.com/feed/',
   },
   NETFLIX: {
-    name: 'Netflix Tech',
+    name: 'Netflix',
     url: 'https://netflixtechblog.com/feed',
   },
   GOOGLE: {
-    name: 'Google Developers',
-    url: 'https://developers.googleblog.com/feeds/posts/default',
+    name: 'Google',
+    url: 'http://feeds.feedburner.com/GoogleDevelopersKorea',
   },
-  AMAZON: {
-    name: 'AWS Developer',
+  AWS: {
+    name: 'AWS',
     url: 'https://aws.amazon.com/blogs/developer/feed/',
   },
 } as const;

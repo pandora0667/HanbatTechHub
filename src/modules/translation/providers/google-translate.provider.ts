@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIProvider } from './provider.interface';
+import { TranslationProvider } from './provider.interface';
 import axios from 'axios';
 
 @Injectable()
-export class GoogleTranslateProvider implements AIProvider {
+export class GoogleTranslateProvider implements TranslationProvider {
   private readonly logger = new Logger(GoogleTranslateProvider.name);
   private readonly endpoint = 'https://translate.google.com/m';
   private readonly userAgents = [
@@ -115,4 +115,4 @@ export class GoogleTranslateProvider implements AIProvider {
       throw error;
     }
   }
-}
+} 

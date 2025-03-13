@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { MenuModule } from './modules/menu/menu.module';
 import { NoticeModule } from './modules/notice/notice.module';
 import { BlogModule } from './modules/blog/blog.module';
-import { AIModule } from './modules/ai/ai.module';
+import { TranslationModule } from './modules/translation/translation.module';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { AIModule } from './modules/ai/ai.module';
     MenuModule,
     NoticeModule,
     BlogModule,
-    AIModule,
+    TranslationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
