@@ -261,30 +261,44 @@ http://localhost:3000/api-docs
 
 ```
 src/
-├── modules/              # 도메인별 모듈
-│   ├── notice/           # 공지사항 관련 모듈
-│   │   ├── constants/    # 상수 정의
-│   │   ├── dto/          # 데이터 전송 객체
-│   │   ├── interfaces/   # 인터페이스 정의
-│   │   ├── notice.controller.ts
-│   │   ├── notice.service.ts
-│   │   └── notice.module.ts
-│   │
-│   ├── menu/             # 식단 관련 모듈
-│   │   ├── dto/          # 데이터 전송 객체
-│   │   ├── menu.controller.ts
-│   │   ├── menu.service.ts
-│   │   └── menu.module.ts
-│   │
-│   ├── blog/             # 기술 블로그 관련 모듈
-│   │   ├── dto/          # 데이터 전송 객체
-│   │   ├── interfaces/   # 인터페이스 정의
-│   │   ├── blog.controller.ts
-│   │   ├── blog.service.ts
-│   │   └── blog.module.ts
-│   │
-│   ├── app.module.ts     # 메인 모듈
-│   └── main.ts           # 애플리케이션 진입점
+├── main.ts                # 애플리케이션 진입점
+├── app.module.ts          # 메인 모듈
+├── app.controller.ts      # 메인 컨트롤러
+├── app.service.ts         # 메인 서비스
+├── common/                # 공통 유틸리티, 상수 등
+├── config/                # 환경 설정 관련 파일
+│   
+└── modules/               # 도메인별 모듈
+    ├── notice/            # 공지사항 관련 모듈
+    │   ├── constants/     # 상수 정의
+    │   ├── dto/           # 데이터 전송 객체
+    │   ├── interfaces/    # 인터페이스 정의
+    │   ├── notice.controller.ts
+    │   ├── notice.service.ts
+    │   └── notice.module.ts
+    │
+    ├── menu/              # 식단 관련 모듈
+    │   ├── dto/           # 데이터 전송 객체
+    │   ├── menu.controller.ts
+    │   ├── menu.service.ts
+    │   └── menu.module.ts
+    │
+    ├── blog/              # 기술 블로그 관련 모듈
+    │   ├── dto/           # 데이터 전송 객체
+    │   ├── interfaces/    # 인터페이스 정의
+    │   ├── blog.controller.ts
+    │   ├── blog.service.ts
+    │   └── blog.module.ts
+    │
+    ├── health/            # 시스템 상태 모니터링 모듈
+    │   ├── health.controller.ts
+    │   └── health.module.ts
+    │
+    └── translation/       # 번역 관련 모듈
+        ├── dto/           # 데이터 전송 객체
+        ├── translation.controller.ts
+        ├── translation.service.ts
+        └── translation.module.ts
 ```
 
 ## 확장 계획
