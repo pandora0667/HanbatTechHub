@@ -1,0 +1,30 @@
+# 개발 환경 및 로그
+.git
+.gitignore
+.env*
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.vscode
+.idea
+
+# 빌드 결과물과 의존성
+node_modules
+dist
+coverage
+build
+.nyc_output
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
+
+# 테스트 파일
+test
+**/*.spec.ts
+**/jest-e2e.json
+
+# Dockerfile 관련
+Dockerfile
+.dockerignore

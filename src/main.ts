@@ -6,8 +6,33 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
+  // 환경변수에 따른 로그 레벨 설정
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const logLevel = process.env.LOG_LEVEL || (nodeEnv === 'production' ? 'info' : 'debug');
+  
+  // 로그 레벨에 따른 로거 설정
+  let loggerOptions;
+  
+  switch (logLevel) {
+    case 'error':
+      loggerOptions = ['error'];
+      break;
+    case 'warn':
+      loggerOptions = ['error', 'warn'];
+      break;
+    case 'info':
+      loggerOptions = ['error', 'warn', 'log'];
+      break;
+    case 'debug':
+    default:
+      loggerOptions = ['error', 'warn', 'log', 'debug'];
+      break;
+  }
+  
+  Logger.log(`Starting application in ${nodeEnv} mode with log level: ${logLevel}`);
+  
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
+    logger: loggerOptions,
   });
 
   // 전역 ValidationPipe 설정 - 페이지네이션 파라미터 무시하도록 수정
