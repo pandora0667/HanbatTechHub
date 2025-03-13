@@ -50,8 +50,10 @@ async function bootstrap() {
   // HTTP 보안 헤더 설정
   app.use(helmet());
 
-  // API 프리픽스 설정
-  app.setGlobalPrefix('api/v1');
+  // API 프리픽스 설정 - health 엔드포인트는 예외로 처리
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/health'],
+  });
 
   // Swagger 설정
   const config = new DocumentBuilder()

@@ -14,6 +14,7 @@
 - 주요 IT 기업 기술 블로그 포스트 조회
   - 무신사, 네이버 D2, 토스, 뱅크샐러드, 긱뉴스
   - 메타, 넷플릭스, 구글, 아마존, 마켓컬리, 카카오엔터프라이즈
+- API 서비스 상태 모니터링 (health check)
 
 ## 개발 환경
 
@@ -39,7 +40,54 @@ $ pnpm run start:dev
 $ pnpm run start:prod
 ```
 
+## Docker 환경
+
+```bash
+# Docker 이미지 빌드
+$ pnpm run docker:build
+
+# Docker 컨테이너 시작
+$ pnpm run docker:start
+
+# Docker 컨테이너 중지
+$ pnpm run docker:stop
+
+# Docker 컨테이너 로그 보기
+$ pnpm run docker:logs
+```
+
 ## API 엔드포인트
+
+### 상태 확인 (Health Check) API
+
+- `GET /health` - API 서비스 상태 확인
+  - 응답: 서비스 상태 정보 (메모리, 디스크, API 엔드포인트 상태 등)
+  - 예시: `curl -X GET "http://localhost:3000/health"`
+  - 응답 예시:
+  ```json
+  {
+    "status": "ok",
+    "info": {
+      "memory_heap": { "status": "up" },
+      "memory_rss": { "status": "up" },
+      "disk": { "status": "up" },
+      "notices_api": { "status": "up" },
+      "menus_api": { "status": "up" },
+      "blogs_api": { "status": "up" },
+      "blog_companies_api": { "status": "up" }
+    },
+    "error": {},
+    "details": {
+      "memory_heap": { "status": "up" },
+      "memory_rss": { "status": "up" },
+      "disk": { "status": "up" },
+      "notices_api": { "status": "up" },
+      "menus_api": { "status": "up" },
+      "blogs_api": { "status": "up" },
+      "blog_companies_api": { "status": "up" }
+    }
+  }
+  ```
 
 ### 공지사항 API
 

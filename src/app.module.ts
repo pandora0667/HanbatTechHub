@@ -6,6 +6,7 @@ import { MenuModule } from './modules/menu/menu.module';
 import { NoticeModule } from './modules/notice/notice.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { TranslationModule } from './modules/translation/translation.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TranslationModule } from './modules/translation/translation.module';
     NoticeModule,
     BlogModule,
     TranslationModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
