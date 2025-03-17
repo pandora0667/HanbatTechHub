@@ -178,7 +178,8 @@ export class JobsService {
   @Cron(JOBS_UPDATE_CRON)
   async updateJobCache(): Promise<void> {
     try {
-      this.logger.log('Updating job cache...');
+      const now = new Date();
+      this.logger.log(`Updating job cache... [KST: ${now.toLocaleTimeString('ko-KR')}]`);
 
       // 모든 크롤러에서 데이터 가져오기
       const tasks = Array.from(this.crawlers.values()).map((crawler) =>
@@ -188,13 +189,12 @@ export class JobsService {
       await Promise.allSettled(tasks);
 
       // 마지막 업데이트 시간 기록
-      const now = new Date();
       await this.redisService.set(
         REDIS_KEYS.JOBS_LAST_UPDATE,
         now.toISOString(),
       );
 
-      this.logger.log('Job cache updated successfully');
+      this.logger.log(`Job cache updated successfully [KST: ${new Date().toLocaleTimeString('ko-KR')}]`);
     } catch (error) {
       this.logger.error(`Job cache update failed: ${error.message}`);
     }

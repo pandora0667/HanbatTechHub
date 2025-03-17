@@ -19,7 +19,8 @@ export const JOBS_CACHE_TTL = parseInt(
 
 /**
  * Job 업데이트 크론 표현식
- * 기본값: 평일 9시-20시 3시간 간격
+ * 기본값: 평일(월-금) 한국 시간(KST) 오전 9시부터 오후 8시까지 3시간 간격
+ * - 실행 시간: 09:00, 12:00, 15:00, 18:00 (KST)
  */
 export const JOBS_UPDATE_CRON =
   process.env.JOBS_UPDATE_CRON || '0 0 9-20/3 * * 1-5';
