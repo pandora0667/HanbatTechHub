@@ -8,6 +8,7 @@ import { NoticeModule } from './modules/notice/notice.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { TranslationModule } from './modules/translation/translation.module';
 import { HealthModule } from './modules/health/health.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 // KST 시간대 설정
 process.env.TZ = 'Asia/Seoul';
@@ -24,6 +25,7 @@ process.env.TZ = 'Asia/Seoul';
     BlogModule,
     TranslationModule,
     HealthModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

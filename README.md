@@ -14,6 +14,8 @@
 - 주요 IT 기업 기술 블로그 포스트 조회
   - 무신사, 네이버 D2, 토스, 뱅크샐러드, 긱뉴스
   - 메타, 넷플릭스, 구글, 아마존, 마켓컬리, 카카오엔터프라이즈
+- 주요 IT 기업 채용정보 조회 (현재 네이버만 지원)
+  - 네이버
 - API 서비스 상태 모니터링 (health check)
 
 ## 개발 환경
@@ -144,7 +146,6 @@ $ docker-compose -f docker-compose-dev.yml up -d
   - 기본 응답: 최신순으로 정렬된 10개의 포스트
   - 정렬 기준: 작성일 기준 내림차순 (최신순)
 
-
 - `GET /api/v1/blogs/companies/:companyId` - 특정 기업의 기술 블로그 포스트 조회
   - 파라미터: `companyId` (기업 ID, 예: MUSINSA, NAVER_D2, TOSS 등)
   - 쿼리 파라미터:
@@ -153,6 +154,28 @@ $ docker-compose -f docker-compose-dev.yml up -d
   - 예시: `curl -X GET "http://localhost:3000/api/v1/blogs/companies/MUSINSA?page=1&limit=3"`
   - 기본 응답: 해당 기업의 최신순 10개 포스트
   - 정렬 기준: 작성일 기준 내림차순 (최신순)
+
+### 채용정보 API
+
+- `GET /api/v1/jobs` - 전체 IT 기업 채용정보 조회 (현재 네이버 채용정보만 제공)
+  - 쿼리 파라미터:
+    - `page`: 페이지 번호 (기본값: 1)
+    - `limit`: 페이지당 항목 수 (기본값: 10)
+    - `company`: 회사 필터 (예: NAVER)
+    - `department`: 부서 필터 (예: Tech)
+    - `field`: 분야 필터 (예: Backend, Frontend, AI/ML)
+    - `career`: 경력 필터 (신입, 경력, 무관)
+    - `employmentType`: 고용 형태 필터 (정규, 계약, 인턴)
+    - `location`: 위치 필터 (분당, 서울, 춘천 등)
+    - `keyword`: 검색어
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs?company=NAVER&field=Backend"`
+  - 기본 응답: 최신순으로 정렬된 채용정보 목록
+
+- `GET /api/v1/jobs/:company` - 특정 기업의 채용정보 조회
+  - 파라미터: `company` (기업 ID, 예: NAVER)
+  - 쿼리 파라미터: 위와 동일 (company 제외)
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs/NAVER?field=AI/ML"`
+  - 기본 응답: 해당 기업의 채용정보 목록
 
 ### 페이지네이션 정보
 
@@ -184,6 +207,50 @@ $ docker-compose -f docker-compose-dev.yml up -d
     "totalPages": 10,
     "hasNextPage": true,
     "hasPreviousPage": false
+  }
+}
+```
+
+### 채용정보 응답 형식
+
+```json
+{
+  "data": [
+    {
+      "id": "30003123",
+      "company": "NAVER",
+      "title": "[NAVER] 광고 플랫폼 개발 (경력)",
+      "department": "Tech",
+      "field": "Backend",
+      "requirements": {
+        "career": "경력",
+        "skills": []
+      },
+      "employmentType": "정규",
+      "locations": [
+        "분당"
+      ],
+      "period": {
+        "start": "2025-03-09T15:00:00.000Z",
+        "end": "2025-03-23T15:00:00.000Z"
+      },
+      "url": "https://recruit.navercorp.com/rcrt/view/30003123",
+      "source": {
+        "originalId": "30003123",
+        "originalUrl": "https://recruit.navercorp.com/rcrt/view/30003123"
+      },
+      "createdAt": "2025-03-17T14:13:49.198Z",
+      "updatedAt": "2025-03-17T14:13:49.198Z",
+      "tags": [],
+      "jobCategory": "개발"
+    }
+    // ... 추가 항목
+  ],
+  "meta": {
+    "total": 10,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
   }
 }
 ```
@@ -273,6 +340,7 @@ http://localhost:3000/api-docs
 │   ├── modules/           # 도메인별 모듈
 │   │   ├── blog/         # 기술 블로그 관련 모듈
 │   │   ├── health/       # 상태 체크 모듈
+│   │   ├── jobs/         # 채용정보 관련 모듈
 │   │   ├── menu/         # 식단 관련 모듈
 │   │   ├── notice/       # 공지사항 관련 모듈
 │   │   ├── redis/        # Redis 관련 모듈
@@ -309,6 +377,11 @@ modules/[module-name]/
 ## 확장 계획
 
 HanbatTechHub(테크누리)는 한밭대학교 모바일융합공학과와 와이소프트 학생들을 위한 프로젝트로 시작되었으며, 추후 다양한 IT 관련 소식을 통합 제공할 예정입니다.
+
+향후 계획:
+- 추가 IT 기업의 채용정보 크롤링 기능 (카카오, 라인, 쿠팡 등)
+- 사용자 관심 분야별 맞춤 알림 기능
+- 모바일 앱 지원
 
 ## 라이센스
 

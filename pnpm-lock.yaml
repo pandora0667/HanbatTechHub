@@ -51,7 +51,7 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
       ioredis:
-        specifier: ^5.3.2
+        specifier: ^5.6.0
         version: 5.6.0
       nest-winston:
         specifier: ^1.10.2
@@ -63,7 +63,7 @@ importers:
         specifier: ^3.13.0
         version: 3.13.0
       rxjs:
-        specifier: ^7.8.1
+        specifier: ^7.8.2
         version: 7.8.2
       winston:
         specifier: ^3.17.0
@@ -84,14 +84,20 @@ importers:
       '@swc/core':
         specifier: ^1.10.7
         version: 1.11.8
+      '@types/cheerio':
+        specifier: ^0.22.35
+        version: 0.22.35
       '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.0
+      '@types/ioredis':
         specifier: ^5.0.0
         version: 5.0.0
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
       '@types/node':
-        specifier: ^22.10.7
+        specifier: ^22.13.10
         version: 22.13.10
       '@types/supertest':
         specifier: ^6.0.2
@@ -1084,6 +1090,9 @@ packages:
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
 
+  '@types/cheerio@0.22.35':
+    resolution: {integrity: sha512-yD57BchKRvTV+JD53UZ6PD8KWY5g5rvvMLRnZR3EQBCZXiDT/HR+pKpMzFGlWNhFrXlo7VPZXtKvIEwZkAWOIA==}
+
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
@@ -1113,6 +1122,10 @@ packages:
 
   '@types/http-errors@2.0.4':
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
+
+  '@types/ioredis@5.0.0':
+    resolution: {integrity: sha512-zJbJ3FVE17CNl5KXzdeSPtdltc4tMT3TzC6fxQS0sQngkbFZ6h+0uTafsRqu+eSLIugf6Yb0Ea0SUuRr42Nk9g==}
+    deprecated: This is a stub types definition. ioredis provides its own type definitions, so you do not need this installed.
 
   '@types/istanbul-lib-coverage@2.0.6':
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
@@ -4802,6 +4815,10 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/node': 22.13.10
 
+  '@types/cheerio@0.22.35':
+    dependencies:
+      '@types/node': 22.13.10
+
   '@types/connect@3.4.38':
     dependencies:
       '@types/node': 22.13.10
@@ -4841,6 +4858,12 @@ snapshots:
   '@types/http-cache-semantics@4.0.4': {}
 
   '@types/http-errors@2.0.4': {}
+
+  '@types/ioredis@5.0.0':
+    dependencies:
+      ioredis: 5.6.0
+    transitivePeerDependencies:
+      - supports-color
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
