@@ -7,7 +7,7 @@ import { NoticeRepository } from './notice.repository';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [ConfigModule, ScheduleModule.forRoot(), RedisModule],
+  imports: [ConfigModule, RedisModule],
   controllers: [NoticeController],
   providers: [NoticeService, NoticeRepository],
   exports: [NoticeService],
