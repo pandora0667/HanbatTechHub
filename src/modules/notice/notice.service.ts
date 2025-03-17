@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+// ioredis 타입을 명시적으로 지정합니다
+// @ts-ignore
 import { Redis } from 'ioredis';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { RedisService } from '../redis/redis.service';
+import { NoticeRepository } from './notice.repository';
 import {
   NoticeItemDto,
   NoticeListResponseDto,
@@ -18,8 +22,6 @@ import {
   NOTICE_DETAIL_CACHE_TTL,
   HANBAT_NOTICE,
 } from './constants/notice.constant';
-import { RedisService } from '../redis/redis.service';
-import { NoticeRepository } from './notice.repository';
 
 @Injectable()
 export class NoticeService {

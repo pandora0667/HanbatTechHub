@@ -7,6 +7,7 @@ import { NoticeModule } from './modules/notice/notice.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { TranslationModule } from './modules/translation/translation.module';
 import { HealthModule } from './modules/health/health.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HealthModule } from './modules/health/health.module';
     BlogModule,
     TranslationModule,
     HealthModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
