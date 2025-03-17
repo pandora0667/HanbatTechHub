@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
     TODAY: 'today',
   },
   MENU: {
-    BASE: 'menu',
+    BASE: 'menus',
     TODAY: 'today',
     WEEK: 'week',
   },

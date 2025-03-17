@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   hbnu-api:
     build:
@@ -10,6 +12,9 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - LOG_LEVEL=info
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-RedisDefaultProductionPass123!}
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
@@ -21,7 +26,28 @@ services:
       start_period: 40s
     networks:
       - hbnu-network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: hbnu-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RedisDefaultProductionPass123!}
+    volumes:
+      - redis-data:/data
+    networks:
+      - hbnu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-RedisDefaultProductionPass123!}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
 networks:
   hbnu-network:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

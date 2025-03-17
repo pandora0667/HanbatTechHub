@@ -1,0 +1,19 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: hbnu-redis-dev
+    command: redis-server --appendonly yes --requirepass devpassword
+    ports:
+      - "6379:6379"  # 외부 접속을 위해 포트 노출
+    volumes:
+      - redis-data-dev:/data
+    networks:
+      - hbnu-network-dev
+
+networks:
+  hbnu-network-dev:
+    driver: bridge
+
+volumes:
+  redis-data-dev:
+    driver: local 

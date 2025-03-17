@@ -23,6 +23,7 @@
 - Cheerio: 웹 스크래핑
 - Axios: HTTP 요청
 - Swagger: API 문서화
+- Redis: 데이터 캐싱 (v7.x)
 
 ## 설치 및 실행
 
@@ -54,7 +55,13 @@ $ pnpm run docker:stop
 
 # Docker 컨테이너 로그 보기
 $ pnpm run docker:logs
+
+# 개발 환경 Redis 실행
+$ docker-compose -f docker-compose-dev.yml up -d
 ```
+
+필수 환경 변수:
+- `REDIS_PASSWORD`: Redis 접속 비밀번호 (기본값: RedisDefaultProductionPass123!)
 
 ## API 엔드포인트
 
@@ -166,7 +173,8 @@ $ pnpm run docker:logs
       "link": "https://example.com/post/1",
       "date": "2024-03-15",
       "company": "MUSINSA",
-      "description": "GitHub Copilot을 도입하고 경험한 개발 생산성 향상에 대한 이야기"
+      "description": "GitHub Copilot을 도입하고 경험한 개발 생산성 향상에 대한 이야기",
+      "isTranslated": true
     }
     // ... 추가 항목
   ],
@@ -260,45 +268,42 @@ http://localhost:3000/api-docs
 ## 프로젝트 구조
 
 ```
-src/
-├── main.ts                # 애플리케이션 진입점
-├── app.module.ts          # 메인 모듈
-├── app.controller.ts      # 메인 컨트롤러
-├── app.service.ts         # 메인 서비스
-├── common/                # 공통 유틸리티, 상수 등
-├── config/                # 환경 설정 관련 파일
-│   
-└── modules/               # 도메인별 모듈
-    ├── notice/            # 공지사항 관련 모듈
-    │   ├── constants/     # 상수 정의
-    │   ├── dto/           # 데이터 전송 객체
-    │   ├── interfaces/    # 인터페이스 정의
-    │   ├── notice.controller.ts
-    │   ├── notice.service.ts
-    │   └── notice.module.ts
-    │
-    ├── menu/              # 식단 관련 모듈
-    │   ├── dto/           # 데이터 전송 객체
-    │   ├── menu.controller.ts
-    │   ├── menu.service.ts
-    │   └── menu.module.ts
-    │
-    ├── blog/              # 기술 블로그 관련 모듈
-    │   ├── dto/           # 데이터 전송 객체
-    │   ├── interfaces/    # 인터페이스 정의
-    │   ├── blog.controller.ts
-    │   ├── blog.service.ts
-    │   └── blog.module.ts
-    │
-    ├── health/            # 시스템 상태 모니터링 모듈
-    │   ├── health.controller.ts
-    │   └── health.module.ts
-    │
-    └── translation/       # 번역 관련 모듈
-        ├── dto/           # 데이터 전송 객체
-        ├── translation.controller.ts
-        ├── translation.service.ts
-        └── translation.module.ts
+.
+├── src/
+│   ├── modules/           # 도메인별 모듈
+│   │   ├── blog/         # 기술 블로그 관련 모듈
+│   │   ├── health/       # 상태 체크 모듈
+│   │   ├── menu/         # 식단 관련 모듈
+│   │   ├── notice/       # 공지사항 관련 모듈
+│   │   ├── redis/        # Redis 관련 모듈
+│   │   └── translation/  # 번역 관련 모듈
+│   ├── common/           # 공통 유틸리티
+│   ├── config/           # 설정 파일
+│   ├── filters/          # 예외 필터
+│   ├── main.ts          # 애플리케이션 진입점
+│   ├── app.module.ts    # 루트 모듈
+│   └── app.controller.ts # 루트 컨트롤러
+├── test/                 # 테스트 파일
+├── logs/                 # 로그 파일
+├── dist/                 # 빌드 결과물
+├── docker-compose.yml    # 운영 환경 Docker 설정
+├── docker-compose-dev.yml # 개발 환경 Docker 설정
+├── Dockerfile           # Docker 이미지 설정
+├── .env.development     # 개발 환경 변수
+├── .env.production      # 운영 환경 변수
+├── .env.*.example       # 환경 변수 예제 파일
+└── package.json         # 프로젝트 설정 및 의존성
+
+```
+
+각 모듈은 다음과 같은 구조를 따릅니다:
+```
+modules/[module-name]/
+├── constants/      # 상수 정의
+├── controllers/    # 컨트롤러
+├── services/       # 서비스 로직
+├── interfaces/     # 타입 정의
+└── dto/           # Data Transfer Objects
 ```
 
 ## 확장 계획

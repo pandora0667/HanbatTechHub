@@ -47,19 +47,24 @@ export class GoogleTranslateProvider implements TranslationProvider {
     this.logger.debug('Response HTML structure:');
     this.logger.debug(html);
 
-    // result-container div에서 번역된 텍스트 추출
-    const translationMatch = html.match(/<div class="result-container">(.*?)<\/div>/s);
+    // 번역된 텍스트 추출 (Google Translate mobile 버전의 HTML 구조에 맞춤)
+    const translationMatch =
+      html.match(/class="result-container">(.*?)<\/div>/s) ||
+      html.match(/class="t0">(.*?)<\/div>/s) ||
+      html.match(/class="translation">(.*?)<\/div>/s);
+
     if (!translationMatch) {
+      this.logger.error('Translation pattern not found in HTML:', html);
       throw new Error('Translation result not found in response');
     }
 
     let translatedText = translationMatch[1].trim();
     translatedText = this.unescapeHtml(translatedText);
     translatedText = this.removeControlCharacters(translatedText);
-    
+
     // [...] 제거
     translatedText = translatedText.replace(/\[…\]|\[\.{3}\]|\[\.\.\.\]/g, '');
-    
+
     return translatedText;
   }
 
@@ -115,4 +120,4 @@ export class GoogleTranslateProvider implements TranslationProvider {
       throw error;
     }
   }
-} 
+}

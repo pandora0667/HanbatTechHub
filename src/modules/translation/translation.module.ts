@@ -8,4 +8,4 @@ import { TranslationService } from './services/translation.service';
   providers: [GoogleTranslateProvider, TranslationService],
   exports: [TranslationService],
 })
-export class TranslationModule {} 
+export class TranslationModule {}

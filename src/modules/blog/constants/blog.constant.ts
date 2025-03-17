@@ -64,6 +64,15 @@ export const TECH_BLOG_RSS = {
 export const CACHE_KEYS = {
   ALL_POSTS: 'blog:all-posts',
   COMPANY_POSTS: 'blog:company-posts',
+  COMPANY_LAST_UPDATE: 'blog:company:last-update',
 } as const;
 
 export const UPDATE_INTERVAL = 30 * 60 * 1000; // 30분
+
+export const REDIS_KEYS = {
+  BLOG_POSTS: 'hbnu:blog:posts',
+  BLOG_COMPANY: 'hbnu:blog:company:',
+  BLOG_LAST_UPDATE: 'hbnu:blog:last-update:',
+} as const;
+
+export const DEFAULT_REDIS_TTL = 24 * 60 * 60; // 24 hours

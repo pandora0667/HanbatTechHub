@@ -12,4 +12,4 @@ export interface TranslationConfig {
   model: string;
   apiKey: string;
   baseURL: string;
-} 
+}

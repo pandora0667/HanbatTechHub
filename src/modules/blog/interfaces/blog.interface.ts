@@ -18,3 +18,15 @@ export interface CompanyInfo {
   name: string;
   url: string;
 }
+
+export interface RedisConfig {
+  host: string;
+  port: number;
+  password: string;
+  db: number;
+  ttl: number;
+}
+
+export interface RedisBlogPost extends Omit<BlogPost, 'publishDate'> {
+  publishDate: string; // Date를 ISO string으로 저장
+}

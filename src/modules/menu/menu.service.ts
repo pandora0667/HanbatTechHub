@@ -1,6 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
+import { Redis } from 'ioredis';
 import axios from 'axios';
 import { MenuItemDto, MenuResponseDto } from './dto/menu.dto';
+import {
+  REDIS_KEYS,
+  MENU_UPDATE_CRON,
+  MENU_CACHE_TTL,
+} from './constants/menu.constant';
 
 @Injectable()
 export class MenuService {
@@ -9,6 +17,53 @@ export class MenuService {
     'https://www.hanbat.ac.kr/prog/carteGuidance/kor/sub06_030301/C1/calendar.do';
   private readonly ajaxUrl =
     'https://www.hanbat.ac.kr/prog/carteGuidance/kor/sub06_030301/C1/getCalendar.do';
+  private readonly redis: Redis;
+
+  constructor(private readonly configService: ConfigService) {
+    this.redis = new Redis({
+      host: this.configService.get<string>('REDIS_HOST'),
+      port: this.configService.get<number>('REDIS_PORT'),
+      password: this.configService.get<string>('REDIS_PASSWORD'),
+      db: this.configService.get<number>('REDIS_DB'),
+    });
+
+    // 서버 시작시 최초 데이터 로드
+    this.updateMenuData();
+  }
+
+  @Cron(MENU_UPDATE_CRON)
+  async updateMenuData() {
+    try {
+      this.logger.log('메뉴 데이터 업데이트 시작...');
+
+      // 오늘 날짜 기준으로 이번 주의 메뉴 가져오기
+      const weeklyMenu = await this.fetchWeeklyMenu();
+
+      // Redis에 저장
+      const weekKey = `${REDIS_KEYS.MENU_WEEKLY}${this.formatDate(new Date())}`;
+      await this.redis.set(
+        weekKey,
+        JSON.stringify(weeklyMenu),
+        'EX',
+        MENU_CACHE_TTL,
+      );
+
+      // 각 날짜별 메뉴도 따로 저장
+      for (const menu of weeklyMenu) {
+        const dateKey = `${REDIS_KEYS.MENU_DATE}${menu.date}`;
+        await this.redis.set(
+          dateKey,
+          JSON.stringify(menu),
+          'EX',
+          MENU_CACHE_TTL,
+        );
+      }
+
+      this.logger.log('메뉴 데이터 업데이트 완료');
+    } catch (error) {
+      this.logger.error(`메뉴 데이터 업데이트 실패: ${error.message}`);
+    }
+  }
 
   /**
    * 특정 날짜의 식단 정보를 가져옵니다.
@@ -18,25 +73,35 @@ export class MenuService {
     try {
       const targetDate = date ? new Date(date) : new Date();
       const formattedDate = this.formatDate(targetDate);
+      const cacheKey = `${REDIS_KEYS.MENU_DATE}${formattedDate}`;
 
-      // 해당 주의 월요일 날짜 계산
-      const mondayDate = this.getMondayDate(targetDate);
-      const formattedMondayDate = this.formatDate(mondayDate);
+      // Redis에서 메뉴 데이터 확인
+      const cachedMenu = await this.redis.get(cacheKey);
+      if (cachedMenu) {
+        return JSON.parse(cachedMenu);
+      }
 
-      // AJAX 엔드포인트에서 데이터 직접 가져오기
-      const menuData = await this.fetchMenuDataFromAjax(formattedMondayDate);
-
-      // 해당 날짜의 요일 인덱스 (0: 월, 1: 화, 2: 수, 3: 목, 4: 금)
+      // 캐시에 없으면 직접 가져오기
+      const menuData = await this.fetchMenuDataFromAjax(
+        this.formatDate(this.getMondayDate(targetDate)),
+      );
       const dayIndex = this.getDayIndex(targetDate);
-
-      // 해당 날짜의 메뉴 아이템 추출
       const menuItems = this.extractMenuItemsFromData(
         menuData,
         formattedDate,
         dayIndex,
       );
+      const menuResponse = this.formatMenuResponse(menuItems, formattedDate);
 
-      return this.formatMenuResponse(menuItems, formattedDate);
+      // Redis에 저장
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify(menuResponse),
+        'EX',
+        MENU_CACHE_TTL,
+      );
+
+      return menuResponse;
     } catch (error) {
       this.logger.error(`식단 정보 가져오기 실패: ${error.message}`);
       throw error;
@@ -52,47 +117,74 @@ export class MenuService {
       const startDay = startDate ? new Date(startDate) : new Date();
       const mondayDate = this.getMondayDate(startDay);
       const formattedMondayDate = this.formatDate(mondayDate);
+      const cacheKey = `${REDIS_KEYS.MENU_WEEKLY}${formattedMondayDate}`;
 
-      // AJAX 엔드포인트에서 데이터 직접 가져오기
-      const menuData = await this.fetchMenuDataFromAjax(formattedMondayDate);
-
-      const weekMenus: MenuResponseDto[] = [];
-
-      // 일주일간의 메뉴 (월~금)
-      for (let i = 0; i < 5; i++) {
-        const targetDate = new Date(mondayDate);
-        targetDate.setDate(mondayDate.getDate() + i);
-        const formattedDate = this.formatDate(targetDate);
-
-        // 해당 요일의 메뉴 아이템 추출
-        const menuItems = this.extractMenuItemsFromData(
-          menuData,
-          formattedDate,
-          i,
-        );
-
-        const menuResponse = this.formatMenuResponse(menuItems, formattedDate);
-        weekMenus.push(menuResponse);
+      // Redis에서 주간 메뉴 데이터 확인
+      const cachedWeeklyMenu = await this.redis.get(cacheKey);
+      if (cachedWeeklyMenu) {
+        return JSON.parse(cachedWeeklyMenu);
       }
 
-      // 주말 (토, 일) 추가 - 메뉴 없음
-      for (let i = 5; i < 7; i++) {
-        const targetDate = new Date(mondayDate);
-        targetDate.setDate(mondayDate.getDate() + i);
-        const formattedDate = this.formatDate(targetDate);
+      // 캐시에 없으면 직접 가져오기
+      const weeklyMenu = await this.fetchWeeklyMenu(startDate);
 
-        weekMenus.push({
-          date: formattedDate,
-          lunch: [],
-          dinner: [],
-        });
-      }
+      // Redis에 저장
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify(weeklyMenu),
+        'EX',
+        MENU_CACHE_TTL,
+      );
 
-      return weekMenus;
+      return weeklyMenu;
     } catch (error) {
       this.logger.error(`주간 식단 정보 가져오기 실패: ${error.message}`);
       throw error;
     }
+  }
+
+  private async fetchWeeklyMenu(
+    startDate?: string,
+  ): Promise<MenuResponseDto[]> {
+    const startDay = startDate ? new Date(startDate) : new Date();
+    const mondayDate = this.getMondayDate(startDay);
+    const formattedMondayDate = this.formatDate(mondayDate);
+
+    // AJAX 엔드포인트에서 데이터 직접 가져오기
+    const menuData = await this.fetchMenuDataFromAjax(formattedMondayDate);
+
+    const weekMenus: MenuResponseDto[] = [];
+
+    // 일주일간의 메뉴 (월~금)
+    for (let i = 0; i < 5; i++) {
+      const targetDate = new Date(mondayDate);
+      targetDate.setDate(mondayDate.getDate() + i);
+      const formattedDate = this.formatDate(targetDate);
+
+      // 해당 요일의 메뉴 아이템 추출
+      const menuItems = this.extractMenuItemsFromData(
+        menuData,
+        formattedDate,
+        i,
+      );
+      const menuResponse = this.formatMenuResponse(menuItems, formattedDate);
+      weekMenus.push(menuResponse);
+    }
+
+    // 주말 (토, 일) 추가 - 메뉴 없음
+    for (let i = 5; i < 7; i++) {
+      const targetDate = new Date(mondayDate);
+      targetDate.setDate(mondayDate.getDate() + i);
+      const formattedDate = this.formatDate(targetDate);
+
+      weekMenus.push({
+        date: formattedDate,
+        lunch: [],
+        dinner: [],
+      });
+    }
+
+    return weekMenus;
   }
 
   /**
