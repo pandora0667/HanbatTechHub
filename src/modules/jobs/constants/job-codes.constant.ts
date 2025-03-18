@@ -40,6 +40,7 @@ export const COMPANY_ENUM = {
   NAVER_WEBTOON: 'NAVER_WEBTOON',
   NAVER_FINANCIAL: 'NAVER_FINANCIAL',
   NAVER_IS: 'NAVER_IS',
+  KAKAO: 'KAKAO',
 } as const;
 
 export const EMPLOYMENT_TYPE = {
