@@ -1,5 +1,6 @@
 import { Provider } from '@nestjs/common';
 import { NaverCrawler } from './naver.crawler';
+import { KakaoCrawler } from './kakao.crawler';
 import { IJobCrawler } from '../interfaces/job-crawler.interface';
 
 export const CRAWLER_TOKEN = 'CRAWLER_TOKEN';
@@ -7,6 +8,7 @@ export const CRAWLER_TOKEN = 'CRAWLER_TOKEN';
 // 크롤러 클래스 배열 - 새로운 크롤러를 여기에 추가하세요
 const crawlerClasses = [
   NaverCrawler,
+  KakaoCrawler,
   // KakaoTechCrawler,
   // LineCrawler,
   // WoowabrosCrawler,
