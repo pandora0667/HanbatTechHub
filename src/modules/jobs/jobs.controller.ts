@@ -3,6 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JobsService, PaginatedResponse } from './services/jobs.service';
 import { GetJobsQueryDto } from './dto/requests/get-jobs-query.dto';
 import { JobPostingResponseDto } from './dto/responses/job-posting.response.dto';
+import { SupportedCompaniesResponseDto } from './dto/responses/supported-companies.response.dto';
 import { CompanyType } from './interfaces/job-posting.interface';
 
 @ApiTags('jobs')
@@ -11,17 +12,14 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   @Get()
-  @ApiOperation({ summary: '전체 기술 직군 채용 정보 조회' })
+  @ApiOperation({ summary: '지원하는 회사 목록 조회' })
   @ApiResponse({
     status: 200,
-    description: '기술 직군 채용 정보 목록',
-    type: JobPostingResponseDto,
-    isArray: true,
+    description: '지원하는 회사 목록',
+    type: SupportedCompaniesResponseDto,
   })
-  async getTechJobs(
-    @Query() query: GetJobsQueryDto,
-  ): Promise<PaginatedResponse<JobPostingResponseDto>> {
-    return this.jobsService.getTechJobs(query);
+  async getSupportedCompanies(): Promise<SupportedCompaniesResponseDto> {
+    return this.jobsService.getSupportedCompanies();
   }
 
   @Get(':company')

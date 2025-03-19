@@ -157,24 +157,37 @@ $ docker-compose -f docker-compose-dev.yml up -d
 
 ### 채용정보 API
 
-- `GET /api/v1/jobs` - 전체 IT 기업 채용정보 조회 (현재 네이버 채용정보만 제공)
+- `GET /api/v1/jobs` - 지원하는 IT 기업 목록 조회
+  - 응답: 지원하는 IT 기업 목록 (현재 네이버, 카카오 지원)
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs"`
+  - 응답 예시:
+  ```json
+  {
+    "companies": [
+      {
+        "code": "NAVER",
+        "name": "네이버"
+      },
+      {
+        "code": "KAKAO",
+        "name": "카카오"
+      }
+    ]
+  }
+  ```
+
+- `GET /api/v1/jobs/:company` - 특정 기업의 채용정보 조회
+  - 파라미터: `company` (기업 ID, 예: NAVER, KAKAO)
   - 쿼리 파라미터:
     - `page`: 페이지 번호 (기본값: 1)
     - `limit`: 페이지당 항목 수 (기본값: 10)
-    - `company`: 회사 필터 (예: NAVER)
-    - `department`: 부서 필터 (예: Tech)
-    - `field`: 분야 필터 (예: Backend, Frontend, AI/ML)
+    - `department`: 부서 필터 (예: Tech, 테크)
+    - `field`: 분야 필터 (예: Backend, Frontend, AI/ML, Server, iOS, Cloud)
     - `career`: 경력 필터 (신입, 경력, 무관)
     - `employmentType`: 고용 형태 필터 (정규, 계약, 인턴)
     - `location`: 위치 필터 (분당, 서울, 춘천 등)
     - `keyword`: 검색어
-  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs?company=NAVER&field=Backend"`
-  - 기본 응답: 최신순으로 정렬된 채용정보 목록
-
-- `GET /api/v1/jobs/:company` - 특정 기업의 채용정보 조회
-  - 파라미터: `company` (기업 ID, 예: NAVER)
-  - 쿼리 파라미터: 위와 동일 (company 제외)
-  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs/NAVER?field=AI/ML"`
+  - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs/KAKAO?field=AI/ML"`
   - 기본 응답: 해당 기업의 채용정보 목록
 
 ### 페이지네이션 정보
