@@ -71,4 +71,4 @@ export interface KakaoJobData {
    * 기술 스택
    */
   skills?: string[];
-} 
+}

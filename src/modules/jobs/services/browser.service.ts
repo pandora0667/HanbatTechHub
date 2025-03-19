@@ -119,4 +119,4 @@ export class BrowserService implements OnModuleDestroy {
       this.logger.error('Failed to close browser:', error);
     }
   }
-} 
+}

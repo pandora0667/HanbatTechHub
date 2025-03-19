@@ -179,7 +179,9 @@ export class JobsService {
   async updateJobCache(): Promise<void> {
     try {
       const now = new Date();
-      this.logger.log(`Updating job cache... [KST: ${now.toLocaleTimeString('ko-KR')}]`);
+      this.logger.log(
+        `Updating job cache... [KST: ${now.toLocaleTimeString('ko-KR')}]`,
+      );
 
       // 모든 크롤러에서 데이터 가져오기
       const tasks = Array.from(this.crawlers.values()).map((crawler) =>
@@ -194,7 +196,9 @@ export class JobsService {
         now.toISOString(),
       );
 
-      this.logger.log(`Job cache updated successfully [KST: ${new Date().toLocaleTimeString('ko-KR')}]`);
+      this.logger.log(
+        `Job cache updated successfully [KST: ${new Date().toLocaleTimeString('ko-KR')}]`,
+      );
     } catch (error) {
       this.logger.error(`Job cache update failed: ${error.message}`);
     }

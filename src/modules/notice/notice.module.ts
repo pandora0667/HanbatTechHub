@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
+import { RedisModule } from '../redis/redis.module';
 import { NoticeController } from './notice.controller';
 import { NoticeService } from './notice.service';
 import { NoticeRepository } from './notice.repository';
-import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [ConfigModule, RedisModule],
