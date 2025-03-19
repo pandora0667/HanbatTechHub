@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import {
   CAREER_TYPE,
+  COMPANY_ENUM,
   EMPLOYMENT_TYPE,
   LOCATION_TYPE,
 } from '../../constants/job-codes.constant';
@@ -12,6 +13,11 @@ import {
 } from '../../interfaces/job-posting.interface';
 
 export class GetJobsQueryDto {
+  @ApiProperty({ required: false, enum: COMPANY_ENUM, description: '회사 (예: NAVER, KAKAO)' })
+  @IsEnum(COMPANY_ENUM)
+  @IsOptional()
+  company?: (typeof COMPANY_ENUM)[keyof typeof COMPANY_ENUM];
+
   @ApiProperty({ required: false, description: '부서 (예: Tech)' })
   @IsString()
   @IsOptional()

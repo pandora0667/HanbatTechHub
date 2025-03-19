@@ -11,6 +11,7 @@ import { IJobCrawler } from '../interfaces/job-crawler.interface';
 import { CompanyType, JobPosting } from '../interfaces/job-posting.interface';
 import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import { JobPostingResponseDto } from '../dto/responses/job-posting.response.dto';
+import { SupportedCompaniesResponseDto } from '../dto/responses/supported-companies.response.dto';
 import { CRAWLER_TOKEN } from '../crawlers';
 import {
   REDIS_KEYS,
@@ -18,6 +19,7 @@ import {
   JOBS_UPDATE_CRON,
   JOB_CRAWLING_CONFIG,
 } from '../constants/redis.constant';
+import { COMPANY_ENUM } from '../constants/job-codes.constant';
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -44,7 +46,25 @@ export class JobsService {
     );
 
     // 서버 시작시 초기 데이터 로드
-    this.updateJobCache();
+    this.initializeJobs();
+  }
+
+  /**
+   * 채용정보 서비스 초기화
+   */
+  private async initializeJobs(): Promise<void> {
+    try {
+      // Redis 캐시 초기화 (jobs:* 패턴의 키만)
+      await this.redisService.initializeServiceCache('jobs');
+      this.logger.log('Jobs cache initialized');
+
+      // 초기 데이터 로드
+      await this.updateJobCache();
+      this.logger.log('Initial job data loaded');
+    } catch (error) {
+      this.logger.error('Failed to initialize jobs:', error);
+      throw new InternalServerErrorException('Failed to initialize jobs');
+    }
   }
 
   /**
@@ -244,42 +264,40 @@ export class JobsService {
   private async fetchAllTechJobs(
     query: GetJobsQueryDto,
   ): Promise<JobPosting[]> {
-    // 캐시 키
-    const cacheKey = REDIS_KEYS.JOBS_ALL;
-
-    // 캐시에서 데이터 조회
-    const cachedData = await this.redisService.get<JobPosting[]>(cacheKey);
-
-    if (cachedData) {
-      return cachedData;
-    }
-
-    // 캐시에 없는 경우 모든 크롤러에서 병렬로 데이터 가져오기
-    const crawlerTasks = Array.from(this.crawlers.entries()).map(
-      async ([company, crawler]) => {
-        try {
-          // 재시도 로직 적용
-          return await this.executeWithRetry(
-            () => crawler.fetchJobs(query),
-            `Fetching jobs for ${company} in fetchAllTechJobs`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to fetch jobs for ${company}: ${error.message}`,
-          );
-          return [];
+    try {
+      // 특정 회사가 지정된 경우 해당 회사의 채용정보만 조회
+      if (query.company) {
+        const crawler = this.crawlers.get(query.company);
+        if (!crawler) {
+          throw new Error(`Crawler not found for company: ${query.company}`);
         }
-      },
-    );
+        return await this.executeWithRetry(
+          () => crawler.fetchJobs(),
+          `Fetching jobs for ${query.company}`,
+        );
+      }
 
-    // 모든 크롤러 결과 병합
-    const results = await Promise.all(crawlerTasks);
-    const jobs = results.flat();
+      // 모든 회사의 채용정보 조회
+      const allJobs: JobPosting[] = [];
+      for (const [company, crawler] of this.crawlers) {
+        try {
+          const jobs = await this.executeWithRetry(
+            () => crawler.fetchJobs(),
+            `Fetching jobs for ${company}`,
+          );
+          allJobs.push(...jobs);
+        } catch (error) {
+          this.logger.error(`Failed to fetch jobs for ${company}:`, error);
+          // 한 회사 실패해도 다른 회사는 계속 진행
+          continue;
+        }
+      }
 
-    // 데이터 캐싱
-    await this.redisService.set(cacheKey, jobs, JOBS_CACHE_TTL);
-
-    return jobs;
+      return allJobs;
+    } catch (error) {
+      this.logger.error('Failed to fetch all tech jobs:', error);
+      throw new InternalServerErrorException('Failed to fetch tech jobs');
+    }
   }
 
   private filterJobs(jobs: JobPosting[], query: GetJobsQueryDto): JobPosting[] {
@@ -410,5 +428,19 @@ export class JobsService {
     }
 
     return parts.join(':');
+  }
+
+  async getSupportedCompanies(): Promise<SupportedCompaniesResponseDto> {
+    try {
+      const companies = Array.from(this.crawlers.keys()).map((code) => ({
+        code,
+        name: COMPANY_ENUM[code],
+      }));
+
+      return { companies };
+    } catch (error) {
+      this.logger.error(`Failed to get supported companies: ${error.message}`);
+      throw new InternalServerErrorException('Failed to get supported companies');
+    }
   }
 }
