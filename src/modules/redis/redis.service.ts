@@ -46,7 +46,9 @@ export class RedisService {
       const keys = await this.redis.keys(pattern);
       if (keys.length > 0) {
         await this.redis.del(...keys);
-        this.logger.log(`Cleared ${keys.length} keys matching pattern: ${pattern}`);
+        this.logger.log(
+          `Cleared ${keys.length} keys matching pattern: ${pattern}`,
+        );
       }
     } catch (error) {
       this.logger.error(`Failed to flush keys by pattern ${pattern}:`, error);
@@ -64,7 +66,10 @@ export class RedisService {
       await this.flushByPattern(pattern);
       this.logger.log(`Initialized cache for service: ${serviceName}`);
     } catch (error) {
-      this.logger.error(`Failed to initialize cache for service ${serviceName}:`, error);
+      this.logger.error(
+        `Failed to initialize cache for service ${serviceName}:`,
+        error,
+      );
       throw error;
     }
   }

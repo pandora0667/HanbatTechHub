@@ -13,7 +13,11 @@ import {
 } from '../../interfaces/job-posting.interface';
 
 export class GetJobsQueryDto {
-  @ApiProperty({ required: false, enum: COMPANY_ENUM, description: '회사 (예: NAVER, KAKAO)' })
+  @ApiProperty({
+    required: false,
+    enum: COMPANY_ENUM,
+    description: '회사 (예: NAVER, KAKAO)',
+  })
   @IsEnum(COMPANY_ENUM)
   @IsOptional()
   company?: (typeof COMPANY_ENUM)[keyof typeof COMPANY_ENUM];

@@ -440,7 +440,9 @@ export class JobsService {
       return { companies };
     } catch (error) {
       this.logger.error(`Failed to get supported companies: ${error.message}`);
-      throw new InternalServerErrorException('Failed to get supported companies');
+      throw new InternalServerErrorException(
+        'Failed to get supported companies',
+      );
     }
   }
 }
