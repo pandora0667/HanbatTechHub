@@ -42,6 +42,7 @@ export const COMPANY_ENUM = {
   NAVER_IS: 'NAVER_IS',
   KAKAO: 'KAKAO',
   LINE: 'LINE',
+  COUPANG: 'COUPANG',
 } as const;
 
 export const EMPLOYMENT_TYPE = {
@@ -72,4 +73,12 @@ export const LINE_JOB_CODES = {
   MARKETING: 'Marketing & CS',
   ANALYSIS: 'Analysis',
   CORPORATE: 'Corporate',
+} as const;
+
+export const COUPANG_DEPARTMENTS = {
+  CLOUD_PLATFORM: 'Cloud Platform',
+  CORPORATE_IT: 'Corporate IT',
+  ECOMMERCE_PRODUCT: 'eCommerce Product',
+  PRODUCT_UX: 'Product UX',
+  SEARCH_DISCOVERY: 'Search and Discovery',
 } as const;

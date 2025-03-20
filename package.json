@@ -96,8 +96,7 @@
     "ignoredBuiltDependencies": [
       "@nestjs/core",
       "@scarf/scarf",
-      "@swc/core",
-      "puppeteer"
+      "@swc/core"
     ],
     "onlyBuiltDependencies": [
       "@nestjs/core",
