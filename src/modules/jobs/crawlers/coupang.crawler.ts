@@ -12,6 +12,7 @@ import {
 } from '../constants/job-codes.constant';
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as cheerio from 'cheerio';
+import * as puppeteer from 'puppeteer';
 
 @Injectable()
 export class CoupangCrawler extends BaseJobCrawler {
@@ -26,35 +27,36 @@ export class CoupangCrawler extends BaseJobCrawler {
   }
 
   async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
-    this.logger.log('Starting to fetch Coupang jobs...');
-
     try {
+      this.logger.log('쿠팡 채용 정보 가져오기 시작');
       const url = this.buildUrl(query);
-      this.logger.debug(`Fetching jobs from: ${url}`);
+      this.logger.debug(`요청 URL: ${url}`);
 
-      const response = await this.httpClient.get(url, {
-        headers: {
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
-          'User-Agent': this.httpClient.getRandomUserAgent(),
-        },
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
 
-      if (!response) {
-        throw new Error('Empty response received from Coupang jobs API');
-      }
+      try {
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+        await page.setViewport({ width: 1920, height: 1080 });
 
-      if (typeof response !== 'string') {
-        throw new Error(`Invalid response type: ${typeof response}`);
-      }
+        await page.goto(url, {
+          waitUntil: 'networkidle0',
+          timeout: 30000
+        });
 
-      const jobs = this.parseJobListings(response);
-      this.logger.log(`Successfully fetched ${jobs.length} Coupang jobs`);
-      return jobs;
+        const content = await page.content();
+        const jobs = this.parseJobListings(content);
+        this.logger.log(`쿠팡 채용 정보 ${jobs.length}건 가져오기 완료`);
+        return jobs;
+      } finally {
+        await browser.close();
+      }
     } catch (error) {
-      this.handleError('Failed to fetch Coupang jobs', error);
-      return [];
+      this.logger.error('쿠팡 채용 정보 가져오기 실패:', error);
+      throw error;
     }
   }
 
