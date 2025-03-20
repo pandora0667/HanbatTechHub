@@ -44,8 +44,8 @@ export class GoogleTranslateProvider implements TranslationProvider {
 
   private findTranslation(html: string): string {
     // 디버깅을 위해 HTML 내용 로깅
-    this.logger.debug('Response HTML structure:');
-    this.logger.debug(html);
+    // this.logger.debug('Response HTML structure:');
+    // this.logger.debug(html);
 
     // 번역된 텍스트 추출 (Google Translate mobile 버전의 HTML 구조에 맞춤)
     const translationMatch =
@@ -100,9 +100,9 @@ export class GoogleTranslateProvider implements TranslationProvider {
       const translatedText = this.findTranslation(response.data);
 
       // 번역 완료 후 2초 대기
-      this.logger.debug(
-        'Translation completed, waiting 2 seconds before next request...',
-      );
+      // this.logger.debug(
+      //   'Translation completed, waiting 2 seconds before next request...',
+      // );
       await this.sleep(2000);
 
       return translatedText;
@@ -111,7 +111,7 @@ export class GoogleTranslateProvider implements TranslationProvider {
         this.logger.error(
           `Google translation failed with status ${error.response.status}`,
         );
-        this.logger.debug('Response headers:', error.response.headers);
+        // this.logger.debug('Response headers:', error.response.headers);
       }
       this.logger.error(
         `Google translation failed: ${error.message}`,
