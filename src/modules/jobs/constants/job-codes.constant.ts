@@ -43,6 +43,7 @@ export const COMPANY_ENUM = {
   KAKAO: 'KAKAO',
   LINE: 'LINE',
   COUPANG: 'COUPANG',
+  BAEMIN: 'BAEMIN',
 } as const;
 
 export const EMPLOYMENT_TYPE = {
@@ -63,6 +64,8 @@ export const LOCATION_TYPE = {
   CHUNCHEON: '춘천',
   SEJONG: '세종',
   GLOBAL: '글로벌',
+  BUSAN: '부산',
+  OTHER: '기타',
 } as const;
 
 export const LINE_JOB_CODES = {

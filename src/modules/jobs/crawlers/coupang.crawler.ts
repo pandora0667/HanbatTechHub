@@ -34,17 +34,19 @@ export class CoupangCrawler extends BaseJobCrawler {
 
       const browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
 
       try {
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+        await page.setUserAgent(
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        );
         await page.setViewport({ width: 1920, height: 1080 });
 
         await page.goto(url, {
           waitUntil: 'networkidle0',
-          timeout: 30000
+          timeout: 30000,
         });
 
         const content = await page.content();

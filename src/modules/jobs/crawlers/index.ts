@@ -4,6 +4,7 @@ import { KakaoCrawler } from './kakao.crawler';
 import { IJobCrawler } from '../interfaces/job-crawler.interface';
 import { LineCrawler } from './line.crawler';
 import { CoupangCrawler } from './coupang.crawler';
+import { BaeminCrawler } from './baemin.crawler';
 import { HttpClientUtil } from '../utils/http-client.util';
 import { ConfigService } from '@nestjs/config';
 
@@ -15,6 +16,7 @@ const crawlerClasses = [
   KakaoCrawler,
   LineCrawler,
   CoupangCrawler,
+  BaeminCrawler,
   // KakaoTechCrawler,
   // WoowabrosCrawler,
   // 추가 크롤러 클래스들...
@@ -41,6 +43,7 @@ export const createCrawlers = (
     new KakaoCrawler(httpClient, configService),
     new LineCrawler(httpClient, configService),
     new CoupangCrawler(httpClient, configService),
+    new BaeminCrawler(httpClient, configService),
   ];
 };
 
@@ -49,3 +52,4 @@ export * from './base-job.crawler';
 export * from './example.crawler';
 export * from './line.crawler';
 export * from './coupang.crawler';
+export * from './baemin.crawler';
