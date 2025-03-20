@@ -434,7 +434,7 @@ export class JobsService {
     try {
       const companies = Array.from(this.crawlers.keys()).map((code) => ({
         code,
-        name: COMPANY_ENUM[code],
+        name: code,
       }));
 
       return { companies };

@@ -15,7 +15,7 @@
   - 무신사, 네이버 D2, 토스, 뱅크샐러드, 긱뉴스
   - 메타, 넷플릭스, 구글, 아마존, 마켓컬리, 카카오엔터프라이즈
 - 주요 IT 기업 채용정보 조회
-  - 네이버, 카카오, 라인, 쿠팡
+  - 네이버, 카카오, 라인, 쿠팡, 우아한형제들
 - API 서비스 상태 모니터링 (health check)
 
 ## 개발 환경
@@ -158,7 +158,7 @@ $ docker-compose -f docker-compose-dev.yml up -d
 ### 채용정보 API
 
 - `GET /api/v1/jobs` - 지원하는 IT 기업 목록 조회
-  - 응답: 지원하는 IT 기업 목록 (현재 네이버, 카카오, 라인, 쿠팡 지원)
+  - 응답: 지원하는 IT 기업 목록 (현재 네이버, 카카오, 라인, 쿠팡, 우아한형제들 지원)
   - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs"`
   - 응답 예시:
   ```json
@@ -166,26 +166,30 @@ $ docker-compose -f docker-compose-dev.yml up -d
     "companies": [
       {
         "code": "NAVER",
-        "name": "네이버"
+        "name": "NAVER"
       },
       {
         "code": "KAKAO",
-        "name": "카카오"
+        "name": "KAKAO"
       },
       {
         "code": "LINE",
-        "name": "라인"
+        "name": "LINE"
       },
       {
         "code": "COUPANG",
-        "name": "쿠팡"
+        "name": "COUPANG"
+      },
+      {
+        "code": "BAEMIN",
+        "name": "BAEMIN"
       }
     ]
   }
   ```
 
-- `GET /api/v1/jobs/:company` - 특정 기업의 채용정보 조회
-  - 파라미터: `company` (기업 ID, 예: NAVER, KAKAO, LINE, COUPANG)
+- `GET /api/v1/jobs/{company}` - 특정 기업의 채용정보 조회
+  - 파라미터: `company` (기업 ID, 예: NAVER, KAKAO, LINE, COUPANG, BAEMIN)
   - 쿼리 파라미터:
     - `page`: 페이지 번호 (기본값: 1)
     - `limit`: 페이지당 항목 수 (기본값: 10)
@@ -400,7 +404,7 @@ modules/[module-name]/
 HanbatTechHub(테크누리)는 한밭대학교 모바일융합공학과와 와이소프트 학생들을 위한 프로젝트로 시작되었으며, 추후 다양한 IT 관련 소식을 통합 제공할 예정입니다.
 
 향후 계획:
-- 추가 IT 기업의 채용정보 크롤링 기능 (현재 네이버, 카카오, 라인, 쿠팡 지원)
+- 추가 IT 기업의 채용정보 크롤링 기능 (현재 네이버, 카카오, 라인, 쿠팡, 우아한형제들 지원)
 - 사용자 관심 분야별 맞춤 알림 기능
 - 모바일 앱 지원
 

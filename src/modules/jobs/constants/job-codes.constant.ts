@@ -34,12 +34,12 @@ export const NAVER_TECH_JOB_CODES = {
 
 export const COMPANY_ENUM = {
   NAVER: 'NAVER',
-  NAVER_CLOUD: 'NAVER_CLOUD',
-  SNOW: 'SNOW',
-  NAVER_LABS: 'NAVER_LABS',
-  NAVER_WEBTOON: 'NAVER_WEBTOON',
-  NAVER_FINANCIAL: 'NAVER_FINANCIAL',
-  NAVER_IS: 'NAVER_IS',
+  NAVER_CLOUD: '네이버 클라우드',
+  SNOW: '스노우',
+  NAVER_LABS: '네이버랩스',
+  NAVER_WEBTOON: '네이버웹툰',
+  NAVER_FINANCIAL: '네이버파이낸셜',
+  NAVER_IS: '네이버아이에스',
   KAKAO: 'KAKAO',
   LINE: 'LINE',
   COUPANG: 'COUPANG',
