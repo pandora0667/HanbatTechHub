@@ -41,6 +41,8 @@ export const COMPANY_ENUM = {
   NAVER_FINANCIAL: 'NAVER_FINANCIAL',
   NAVER_IS: 'NAVER_IS',
   KAKAO: 'KAKAO',
+  LINE: 'LINE',
+  COUPANG: 'COUPANG',
 } as const;
 
 export const EMPLOYMENT_TYPE = {
@@ -61,4 +63,22 @@ export const LOCATION_TYPE = {
   CHUNCHEON: '춘천',
   SEJONG: '세종',
   GLOBAL: '글로벌',
+} as const;
+
+export const LINE_JOB_CODES = {
+  ENGINEERING: 'Engineering',
+  PLANNING: 'Planning',
+  DESIGN: 'Design',
+  BUSINESS: 'Business & Sales',
+  MARKETING: 'Marketing & CS',
+  ANALYSIS: 'Analysis',
+  CORPORATE: 'Corporate',
+} as const;
+
+export const COUPANG_DEPARTMENTS = {
+  CLOUD_PLATFORM: 'Cloud Platform',
+  CORPORATE_IT: 'Corporate IT',
+  ECOMMERCE_PRODUCT: 'eCommerce Product',
+  PRODUCT_UX: 'Product UX',
+  SEARCH_DISCOVERY: 'Search and Discovery',
 } as const;

@@ -2,6 +2,10 @@ import { Provider } from '@nestjs/common';
 import { NaverCrawler } from './naver.crawler';
 import { KakaoCrawler } from './kakao.crawler';
 import { IJobCrawler } from '../interfaces/job-crawler.interface';
+import { LineCrawler } from './line.crawler';
+import { CoupangCrawler } from './coupang.crawler';
+import { HttpClientUtil } from '../utils/http-client.util';
+import { ConfigService } from '@nestjs/config';
 
 export const CRAWLER_TOKEN = 'CRAWLER_TOKEN';
 
@@ -9,8 +13,9 @@ export const CRAWLER_TOKEN = 'CRAWLER_TOKEN';
 const crawlerClasses = [
   NaverCrawler,
   KakaoCrawler,
+  LineCrawler,
+  CoupangCrawler,
   // KakaoTechCrawler,
-  // LineCrawler,
   // WoowabrosCrawler,
   // 추가 크롤러 클래스들...
 ];
@@ -27,6 +32,20 @@ export const CRAWLER_PROVIDERS: Provider[] = [
   ...crawlerClasses,
 ];
 
+export const createCrawlers = (
+  httpClient: HttpClientUtil,
+  configService: ConfigService,
+): IJobCrawler[] => {
+  return [
+    new NaverCrawler(httpClient, configService),
+    new KakaoCrawler(httpClient, configService),
+    new LineCrawler(httpClient, configService),
+    new CoupangCrawler(httpClient, configService),
+  ];
+};
+
 export * from './naver.crawler';
 export * from './base-job.crawler';
 export * from './example.crawler';
+export * from './line.crawler';
+export * from './coupang.crawler';

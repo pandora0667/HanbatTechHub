@@ -10,6 +10,9 @@ export class SupportedCompanyDto {
 }
 
 export class SupportedCompaniesResponseDto {
-  @ApiProperty({ description: '지원하는 회사 목록', type: [SupportedCompanyDto] })
+  @ApiProperty({
+    description: '지원하는 회사 목록',
+    type: [SupportedCompanyDto],
+  })
   companies: SupportedCompanyDto[];
-} 
+}
