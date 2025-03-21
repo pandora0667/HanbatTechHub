@@ -7,6 +7,7 @@ import { CoupangCrawler } from './coupang.crawler';
 import { BaeminCrawler } from './baemin.crawler';
 import { HttpClientUtil } from '../utils/http-client.util';
 import { ConfigService } from '@nestjs/config';
+import { DanggnCrawler } from './danggn.crawler';
 
 export const CRAWLER_TOKEN = 'CRAWLER_TOKEN';
 
@@ -17,6 +18,7 @@ const crawlerClasses = [
   LineCrawler,
   CoupangCrawler,
   BaeminCrawler,
+  DanggnCrawler,
   // KakaoTechCrawler,
   // WoowabrosCrawler,
   // 추가 크롤러 클래스들...
@@ -44,12 +46,14 @@ export const createCrawlers = (
     new LineCrawler(httpClient, configService),
     new CoupangCrawler(httpClient, configService),
     new BaeminCrawler(httpClient, configService),
+    new DanggnCrawler(httpClient, configService),
   ];
 };
 
-export * from './naver.crawler';
 export * from './base-job.crawler';
-export * from './example.crawler';
+export * from './naver.crawler';
+export * from './kakao.crawler';
 export * from './line.crawler';
 export * from './coupang.crawler';
 export * from './baemin.crawler';
+export * from './danggn.crawler';

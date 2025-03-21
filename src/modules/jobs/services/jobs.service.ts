@@ -19,7 +19,6 @@ import {
   JOBS_UPDATE_CRON,
   JOB_CRAWLING_CONFIG,
 } from '../constants/redis.constant';
-import { COMPANY_ENUM } from '../constants/job-codes.constant';
 
 export interface PaginatedResponse<T> {
   data: T[];
