@@ -15,7 +15,7 @@
   - 무신사, 네이버 D2, 토스, 뱅크샐러드, 긱뉴스
   - 메타, 넷플릭스, 구글, 아마존, 마켓컬리, 카카오엔터프라이즈
 - 주요 IT 기업 채용정보 조회
-  - 네이버, 카카오, 라인, 쿠팡, 우아한형제들, 당근마켓
+  - 네이버, 카카오, 라인, 쿠팡, 우아한형제들, 당근마켓, 토스
 - API 서비스 상태 모니터링 (health check)
 
 ## 개발 환경
@@ -158,7 +158,7 @@ $ docker-compose -f docker-compose-dev.yml up -d
 ### 채용정보 API
 
 - `GET /api/v1/jobs` - 지원하는 IT 기업 목록 조회
-  - 응답: 지원하는 IT 기업 목록 (현재 네이버, 카카오, 라인, 쿠팡, 우아한형제들, 당근마켓 지원)
+  - 응답: 지원하는 IT 기업 목록 (현재 네이버, 카카오, 라인, 쿠팡, 우아한형제들, 당근마켓, 토스 지원)
   - 예시: `curl -X GET "http://localhost:3000/api/v1/jobs"`
   - 응답 예시:
   ```json
@@ -187,18 +187,22 @@ $ docker-compose -f docker-compose-dev.yml up -d
       {
         "code": "DANGGN",
         "name": "DANGGN"
+      },
+      {
+        "code": "TOSS",
+        "name": "TOSS"
       }
     ]
   }
   ```
 
 - `GET /api/v1/jobs/{company}` - 특정 기업의 채용정보 조회
-  - 파라미터: `company` (기업 ID, 예: NAVER, KAKAO, LINE, COUPANG, BAEMIN, DANGGN)
+  - 파라미터: `company` (기업 ID, 예: NAVER, KAKAO, LINE, COUPANG, BAEMIN, DANGGN, TOSS)
   - 쿼리 파라미터:
     - `page`: 페이지 번호 (기본값: 1)
     - `limit`: 페이지당 항목 수 (기본값: 10)
-    - `department`: 부서 필터 (예: Tech, 테크, Engineering)
-    - `field`: 분야 필터 (예: Backend, Frontend, AI/ML, Server, iOS, Cloud)
+    - `department`: 부서 필터 (예: Frontend, Backend, Mobile, Infrastructure, Data, Security)
+    - `field`: 분야 필터 (예: Frontend, Backend, Mobile, Infrastructure, Data, Security)
     - `career`: 경력 필터 (신입, 경력, 무관)
     - `employmentType`: 고용 형태 필터 (정규, 계약, 인턴)
     - `location`: 위치 필터 (분당, 서울, 춘천, 글로벌 등)
