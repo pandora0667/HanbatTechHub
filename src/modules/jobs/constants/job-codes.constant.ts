@@ -45,6 +45,7 @@ export const COMPANY_ENUM = {
   COUPANG: 'COUPANG',
   BAEMIN: 'BAEMIN',
   DANGGN: 'DANGGN',
+  TOSS: 'TOSS',
 } as const;
 
 export const EMPLOYMENT_TYPE = {
