@@ -8,9 +8,12 @@ import { NoticeRepository } from '../src/modules/notice/notice.repository';
 import { BlogService } from '../src/modules/blog/blog.service';
 import { BlogPostQueryService } from '../src/modules/blog/domain/services/blog-post-query.service';
 import { BlogFeedCollectorService } from '../src/modules/blog/application/services/blog-feed-collector.service';
+import { BlogPostTranslationService } from '../src/modules/blog/application/services/blog-post-translation.service';
 import { GetAllBlogPostsUseCase } from '../src/modules/blog/application/use-cases/get-all-blog-posts.use-case';
 import { GetBlogCompaniesUseCase } from '../src/modules/blog/application/use-cases/get-blog-companies.use-case';
 import { GetCompanyBlogPostsUseCase } from '../src/modules/blog/application/use-cases/get-company-blog-posts.use-case';
+import { InitializeBlogFeedsUseCase } from '../src/modules/blog/application/use-cases/initialize-blog-feeds.use-case';
+import { UpdateBlogFeedsUseCase } from '../src/modules/blog/application/use-cases/update-blog-feeds.use-case';
 import { RedisBlogPostRepository } from '../src/modules/blog/infrastructure/persistence/redis-blog-post.repository';
 import { BlogSourceCatalogService } from '../src/modules/blog/infrastructure/services/blog-source-catalog.service';
 import { RssBlogFeedReaderService } from '../src/modules/blog/infrastructure/services/rss-blog-feed-reader.service';
@@ -95,9 +98,12 @@ describeLive('Live Integration Smoke', () => {
         BlogService,
         BlogPostQueryService,
         BlogFeedCollectorService,
+        BlogPostTranslationService,
         GetAllBlogPostsUseCase,
         GetBlogCompaniesUseCase,
         GetCompanyBlogPostsUseCase,
+        InitializeBlogFeedsUseCase,
+        UpdateBlogFeedsUseCase,
         RedisBlogPostRepository,
         BlogSourceCatalogService,
         RssBlogFeedReaderService,
