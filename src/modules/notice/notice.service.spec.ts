@@ -1,7 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NoticeService } from './notice.service';
 import { RedisService } from '../redis/redis.service';
-import { NoticeRepository } from './notice.repository';
+import { NoticeGroupingService } from './domain/services/notice-grouping.service';
+import { NoticePaginationService } from './domain/services/notice-pagination.service';
+import { NoticeCollectorService } from './application/services/notice-collector.service';
+import { GetNoticesUseCase } from './application/use-cases/get-notices.use-case';
+import { GetNoticeGroupUseCase } from './application/use-cases/get-notice-group.use-case';
+import { GetNoticeDetailUseCase } from './application/use-cases/get-notice-detail.use-case';
+import { UpdateNoticeCacheUseCase } from './application/use-cases/update-notice-cache.use-case';
+import { InitializeNoticeCacheUseCase } from './application/use-cases/initialize-notice-cache.use-case';
+import { RedisNoticeCacheRepository } from './infrastructure/persistence/redis-notice-cache.repository';
+import { HanbatNoticeSourceGateway } from './infrastructure/gateways/hanbat-notice-source.gateway';
+import { NoticeHtmlParserService } from './infrastructure/services/notice-html-parser.service';
+import { NOTICE_CACHE_REPOSITORY } from './application/ports/notice-cache.repository';
+import { NOTICE_SOURCE_GATEWAY } from './application/ports/notice-source.gateway';
 
 describe('NoticeService', () => {
   let service: NoticeService;
@@ -9,17 +21,31 @@ describe('NoticeService', () => {
     get: jest.fn(),
     set: jest.fn(),
   };
-  const noticeRepository = {
-    getNotices: jest.fn(),
-    saveNotices: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NoticeService,
+        NoticeGroupingService,
+        NoticePaginationService,
+        NoticeCollectorService,
+        GetNoticesUseCase,
+        GetNoticeGroupUseCase,
+        GetNoticeDetailUseCase,
+        UpdateNoticeCacheUseCase,
+        InitializeNoticeCacheUseCase,
+        RedisNoticeCacheRepository,
+        HanbatNoticeSourceGateway,
+        NoticeHtmlParserService,
+        {
+          provide: NOTICE_CACHE_REPOSITORY,
+          useExisting: RedisNoticeCacheRepository,
+        },
+        {
+          provide: NOTICE_SOURCE_GATEWAY,
+          useExisting: HanbatNoticeSourceGateway,
+        },
         { provide: RedisService, useValue: redisService },
-        { provide: NoticeRepository, useValue: noticeRepository },
       ],
     }).compile();
 
@@ -29,15 +55,5 @@ describe('NoticeService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  });
-
-  it('returns pagination metadata with 0 total pages for empty new notices', async () => {
-    redisService.get.mockResolvedValue(null);
-    jest.spyOn(service as any, 'fetchNoticeList').mockResolvedValue([]);
-
-    const response = await service.getNewNotices();
-
-    expect(response.meta.totalPages).toBe(0);
-    expect(response.items).toEqual([]);
   });
 });

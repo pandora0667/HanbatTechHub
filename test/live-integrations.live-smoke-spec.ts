@@ -15,7 +15,19 @@ import { HanbatMenuSourceGateway } from '../src/modules/menu/infrastructure/gate
 import { MENU_CACHE_REPOSITORY } from '../src/modules/menu/application/ports/menu-cache.repository';
 import { MENU_SOURCE_GATEWAY } from '../src/modules/menu/application/ports/menu-source.gateway';
 import { NoticeService } from '../src/modules/notice/notice.service';
-import { NoticeRepository } from '../src/modules/notice/notice.repository';
+import { NoticeGroupingService } from '../src/modules/notice/domain/services/notice-grouping.service';
+import { NoticePaginationService } from '../src/modules/notice/domain/services/notice-pagination.service';
+import { NoticeCollectorService } from '../src/modules/notice/application/services/notice-collector.service';
+import { GetNoticesUseCase } from '../src/modules/notice/application/use-cases/get-notices.use-case';
+import { GetNoticeGroupUseCase } from '../src/modules/notice/application/use-cases/get-notice-group.use-case';
+import { GetNoticeDetailUseCase } from '../src/modules/notice/application/use-cases/get-notice-detail.use-case';
+import { UpdateNoticeCacheUseCase } from '../src/modules/notice/application/use-cases/update-notice-cache.use-case';
+import { InitializeNoticeCacheUseCase } from '../src/modules/notice/application/use-cases/initialize-notice-cache.use-case';
+import { RedisNoticeCacheRepository } from '../src/modules/notice/infrastructure/persistence/redis-notice-cache.repository';
+import { HanbatNoticeSourceGateway } from '../src/modules/notice/infrastructure/gateways/hanbat-notice-source.gateway';
+import { NoticeHtmlParserService } from '../src/modules/notice/infrastructure/services/notice-html-parser.service';
+import { NOTICE_CACHE_REPOSITORY } from '../src/modules/notice/application/ports/notice-cache.repository';
+import { NOTICE_SOURCE_GATEWAY } from '../src/modules/notice/application/ports/notice-source.gateway';
 import { BlogService } from '../src/modules/blog/blog.service';
 import { BlogPostQueryService } from '../src/modules/blog/domain/services/blog-post-query.service';
 import { BlogFeedCollectorService } from '../src/modules/blog/application/services/blog-feed-collector.service';
@@ -122,7 +134,25 @@ describeLive('Live Integration Smoke', () => {
           useExisting: HanbatMenuSourceGateway,
         },
         NoticeService,
-        NoticeRepository,
+        NoticeGroupingService,
+        NoticePaginationService,
+        NoticeCollectorService,
+        GetNoticesUseCase,
+        GetNoticeGroupUseCase,
+        GetNoticeDetailUseCase,
+        UpdateNoticeCacheUseCase,
+        InitializeNoticeCacheUseCase,
+        RedisNoticeCacheRepository,
+        HanbatNoticeSourceGateway,
+        NoticeHtmlParserService,
+        {
+          provide: NOTICE_CACHE_REPOSITORY,
+          useExisting: RedisNoticeCacheRepository,
+        },
+        {
+          provide: NOTICE_SOURCE_GATEWAY,
+          useExisting: HanbatNoticeSourceGateway,
+        },
         BlogService,
         BlogPostQueryService,
         BlogFeedCollectorService,
