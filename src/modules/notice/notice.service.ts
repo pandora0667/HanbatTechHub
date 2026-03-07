@@ -18,6 +18,7 @@ import {
   NOTICE_DETAIL_CACHE_TTL,
   HANBAT_NOTICE,
 } from './constants/notice.constant';
+import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 
 @Injectable()
 export class NoticeService implements OnModuleInit {
@@ -34,11 +35,22 @@ export class NoticeService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    if (!isBackgroundSyncEnabled()) {
+      this.logger.log(
+        'ENABLE_BACKGROUND_SYNC=false, startup notice sync is skipped.',
+      );
+      return;
+    }
+
     await this.updateNoticeData();
   }
 
   @Cron(NOTICE_UPDATE_CRON)
   async updateNoticeData() {
+    if (!isBackgroundSyncEnabled()) {
+      return;
+    }
+
     if (this.isUpdating) {
       this.logger.warn(
         '공지사항 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.',

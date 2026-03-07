@@ -8,10 +8,13 @@ import { AppModule } from '../src/app.module';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  const previousBackgroundSync = process.env.ENABLE_BACKGROUND_SYNC;
 
   jest.setTimeout(60000);
 
   beforeAll(async () => {
+    process.env.ENABLE_BACKGROUND_SYNC = 'false';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -24,6 +27,13 @@ describe('AppController (e2e)', () => {
     await app.close();
     httpGlobalAgent.destroy();
     httpsGlobalAgent.destroy();
+
+    if (previousBackgroundSync === undefined) {
+      delete process.env.ENABLE_BACKGROUND_SYNC;
+      return;
+    }
+
+    process.env.ENABLE_BACKGROUND_SYNC = previousBackgroundSync;
   });
 
   it('/ (GET)', () => {

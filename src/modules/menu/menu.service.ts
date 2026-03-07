@@ -8,6 +8,7 @@ import {
   MENU_CACHE_TTL,
 } from './constants/menu.constant';
 import { RedisService } from '../redis/redis.service';
+import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 
 @Injectable()
 export class MenuService implements OnModuleInit {
@@ -21,11 +22,22 @@ export class MenuService implements OnModuleInit {
   constructor(private readonly redisService: RedisService) {}
 
   async onModuleInit(): Promise<void> {
+    if (!isBackgroundSyncEnabled()) {
+      this.logger.log(
+        'ENABLE_BACKGROUND_SYNC=false, startup menu sync is skipped.',
+      );
+      return;
+    }
+
     await this.updateMenuData();
   }
 
   @Cron(MENU_UPDATE_CRON)
   async updateMenuData() {
+    if (!isBackgroundSyncEnabled()) {
+      return;
+    }
+
     if (this.isUpdating) {
       this.logger.warn('메뉴 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
       return;

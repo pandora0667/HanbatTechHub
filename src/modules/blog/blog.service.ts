@@ -20,6 +20,7 @@ import {
 } from './dto/blog-response.dto';
 import { TranslationService } from '../translation/services/translation.service';
 import { RedisService } from '../redis/redis.service';
+import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 
 @Injectable()
 export class BlogService implements OnModuleInit {
@@ -52,11 +53,22 @@ export class BlogService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
+    if (!isBackgroundSyncEnabled()) {
+      this.logger.log(
+        'ENABLE_BACKGROUND_SYNC=false, startup blog sync is skipped.',
+      );
+      return;
+    }
+
     await this.collectFeeds();
   }
 
   @Interval(UPDATE_INTERVAL)
   async updateFeeds() {
+    if (!isBackgroundSyncEnabled()) {
+      return;
+    }
+
     if (this.isUpdating) {
       this.logger.warn('블로그 피드 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
       return;

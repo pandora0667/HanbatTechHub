@@ -20,6 +20,7 @@ import {
   JOBS_UPDATE_CRON,
   JOB_CRAWLING_CONFIG,
 } from '../constants/redis.constant';
+import { isBackgroundSyncEnabled } from '../../../common/utils/background-sync.util';
 
 export interface PaginatedResponse<T> {
   data: T[];
@@ -47,6 +48,13 @@ export class JobsService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
+    if (!isBackgroundSyncEnabled()) {
+      this.logger.log(
+        'ENABLE_BACKGROUND_SYNC=false, startup job sync is skipped.',
+      );
+      return;
+    }
+
     await this.initializeJobs();
   }
 
@@ -200,6 +208,10 @@ export class JobsService implements OnModuleInit {
 
   @Cron(JOBS_UPDATE_CRON)
   async updateJobCache(): Promise<void> {
+    if (!isBackgroundSyncEnabled()) {
+      return;
+    }
+
     if (this.isUpdatingCache) {
       this.logger.warn('Job cache update is already running. Skipping overlap.');
       return;

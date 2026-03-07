@@ -73,12 +73,14 @@ $ docker-compose -f docker-compose-dev.yml up -d
 
 필수 환경 변수:
 - `REDIS_PASSWORD`: Redis 접속 비밀번호 (기본값: RedisDefaultProductionPass123!)
+- `ENABLE_BACKGROUND_SYNC`: startup/스케줄 외부 동기화 실행 여부 (기본값: `true`)
 
 live smoke 테스트 메모:
 - 실제 한밭대/기업 채용 사이트/RSS를 호출합니다.
 - 일반 단위 테스트와 분리되어 있으며 필요할 때만 실행하는 용도입니다.
 - `test:live-smoke:coupang`는 Chromium/Puppeteer 실행 환경이 필요합니다.
 - 로컬에 브라우저가 없다면 먼저 `pnpm run setup:puppeteer`를 실행하세요.
+- e2e 테스트는 `ENABLE_BACKGROUND_SYNC=false`로 실행되어 외부 사이트 warm-up 없이 앱 부팅만 검증합니다.
 
 ## API 엔드포인트
 
