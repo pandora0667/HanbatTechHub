@@ -1,10 +1,11 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Query, Param, ParseEnumPipe } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JobsService, PaginatedResponse } from './services/jobs.service';
 import { GetJobsQueryDto } from './dto/requests/get-jobs-query.dto';
 import { JobPostingResponseDto } from './dto/responses/job-posting.response.dto';
 import { SupportedCompaniesResponseDto } from './dto/responses/supported-companies.response.dto';
 import { CompanyType } from './interfaces/job-posting.interface';
+import { COMPANY_ENUM } from './constants/job-codes.constant';
 
 @ApiTags('jobs')
 @Controller('jobs')
@@ -31,7 +32,7 @@ export class JobsController {
     isArray: true,
   })
   async getCompanyTechJobs(
-    @Param('company') company: CompanyType,
+    @Param('company', new ParseEnumPipe(COMPANY_ENUM)) company: CompanyType,
     @Query() query: GetJobsQueryDto,
   ): Promise<PaginatedResponse<JobPostingResponseDto>> {
     return this.jobsService.getCompanyTechJobs(company, query);

@@ -13,6 +13,7 @@ import {
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as cheerio from 'cheerio';
 import * as puppeteer from 'puppeteer';
+import { Page } from 'puppeteer';
 
 @Injectable()
 export class CoupangCrawler extends BaseJobCrawler {
@@ -27,38 +28,69 @@ export class CoupangCrawler extends BaseJobCrawler {
   }
 
   async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+    let browser: puppeteer.Browser | null = null;
+    let page: Page | null = null;
+
     try {
       this.logger.log('쿠팡 채용 정보 가져오기 시작');
       const url = this.buildUrl(query);
       this.logger.debug(`요청 URL: ${url}`);
 
-      const browser = await puppeteer.launch({
+      browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--mute-audio',
+        ],
       });
 
-      try {
-        const page = await browser.newPage();
-        await page.setUserAgent(
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        );
-        await page.setViewport({ width: 1920, height: 1080 });
+      page = await browser.newPage();
+      await page.setCacheEnabled(false);
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const resourceType = request.resourceType();
+        if (
+          ['image', 'media', 'font', 'stylesheet'].includes(resourceType)
+        ) {
+          void request.abort();
+          return;
+        }
 
-        await page.goto(url, {
-          waitUntil: 'networkidle0',
-          timeout: 30000,
-        });
+        void request.continue();
+      });
 
-        const content = await page.content();
-        const jobs = this.parseJobListings(content);
-        this.logger.log(`쿠팡 채용 정보 ${jobs.length}건 가져오기 완료`);
-        return jobs;
-      } finally {
-        await browser.close();
-      }
+      await page.setUserAgent(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      );
+      await page.setViewport({ width: 1280, height: 720 });
+
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      });
+      await page.waitForSelector('.card.card-job', { timeout: 30000 });
+
+      const content = await page.content();
+      const jobs = this.parseJobListings(content);
+      this.logger.log(`쿠팡 채용 정보 ${jobs.length}건 가져오기 완료`);
+      return jobs;
     } catch (error) {
-      this.logger.error('쿠팡 채용 정보 가져오기 실패:', error);
+      this.logger.error(`쿠팡 채용 정보 가져오기 실패: ${error.message}`);
       throw error;
+    } finally {
+      if (page && !page.isClosed()) {
+        await page.close().catch(() => undefined);
+      }
+
+      if (browser) {
+        await browser.close().catch(() => undefined);
+      }
     }
   }
 

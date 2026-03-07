@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class RedisService {
+export class RedisService implements OnModuleDestroy {
   private readonly redis: Redis;
   private readonly logger = new Logger(RedisService.name);
 
@@ -62,7 +62,9 @@ export class RedisService {
    */
   async initializeServiceCache(serviceName: string): Promise<void> {
     try {
-      const pattern = `${serviceName}:*`;
+      const pattern = serviceName.endsWith(':*')
+        ? serviceName
+        : `${serviceName}:*`;
       await this.flushByPattern(pattern);
       this.logger.log(`Initialized cache for service: ${serviceName}`);
     } catch (error) {
@@ -71,6 +73,17 @@ export class RedisService {
         error,
       );
       throw error;
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    try {
+      await this.redis.quit();
+    } catch (error) {
+      this.logger.warn(
+        `Failed to quit Redis cleanly, disconnecting instead: ${error.message}`,
+      );
+      this.redis.disconnect();
     }
   }
 }

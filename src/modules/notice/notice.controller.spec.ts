@@ -4,11 +4,18 @@ import { NoticeService } from './notice.service';
 
 describe('NoticeController', () => {
   let controller: NoticeController;
+  const noticeService = {
+    getNotices: jest.fn(),
+    getNewNotices: jest.fn(),
+    getFeaturedNotices: jest.fn(),
+    getTodayNotices: jest.fn(),
+    getNoticeDetail: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NoticeController],
-      providers: [NoticeService],
+      providers: [{ provide: NoticeService, useValue: noticeService }],
     }).compile();
 
     controller = module.get<NoticeController>(NoticeController);

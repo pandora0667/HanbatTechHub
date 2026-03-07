@@ -41,6 +41,15 @@ $ pnpm run start:dev
 
 # 배포 모드 실행
 $ pnpm run start:prod
+
+# 실제 외부 사이트를 때리는 live smoke 테스트
+$ pnpm run test:live-smoke
+
+# 쿠팡 브라우저 런타임 설치
+$ pnpm run setup:puppeteer
+
+# 쿠팡(Puppeteer 포함)까지 확인하는 live smoke 테스트
+$ pnpm run test:live-smoke:coupang
 ```
 
 ## Docker 환경
@@ -64,6 +73,12 @@ $ docker-compose -f docker-compose-dev.yml up -d
 
 필수 환경 변수:
 - `REDIS_PASSWORD`: Redis 접속 비밀번호 (기본값: RedisDefaultProductionPass123!)
+
+live smoke 테스트 메모:
+- 실제 한밭대/기업 채용 사이트/RSS를 호출합니다.
+- 일반 단위 테스트와 분리되어 있으며 필요할 때만 실행하는 용도입니다.
+- `test:live-smoke:coupang`는 Chromium/Puppeteer 실행 환경이 필요합니다.
+- 로컬에 브라우저가 없다면 먼저 `pnpm run setup:puppeteer`를 실행하세요.
 
 ## API 엔드포인트
 

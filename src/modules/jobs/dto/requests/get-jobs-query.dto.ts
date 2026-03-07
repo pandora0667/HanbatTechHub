@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import {
   CAREER_TYPE,
   COMPANY_ENUM,
@@ -61,6 +62,9 @@ export class GetJobsQueryDto {
   keyword?: string;
 
   @ApiProperty({ required: false, default: 1, description: '페이지 번호' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   @IsOptional()
   page?: number = 1;
 
@@ -69,6 +73,10 @@ export class GetJobsQueryDto {
     default: 10,
     description: '페이지당 항목 수',
   })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   @IsOptional()
   limit?: number = 10;
 }

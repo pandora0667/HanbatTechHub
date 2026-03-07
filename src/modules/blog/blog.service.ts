@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import * as Parser from 'rss-parser';
 import { BlogPost, RedisBlogPost } from './interfaces/blog.interface';
@@ -14,18 +19,17 @@ import {
   PaginationMetaDto,
 } from './dto/blog-response.dto';
 import { TranslationService } from '../translation/services/translation.service';
-import { Redis } from 'ioredis';
-import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
-export class BlogService {
+export class BlogService implements OnModuleInit {
   private readonly logger = new Logger(BlogService.name);
   private readonly parser: Parser;
-  private readonly redis: Redis;
+  private isUpdating = false;
 
   constructor(
     private readonly translationService: TranslationService,
-    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {
     this.parser = new Parser({
       headers: {
@@ -45,21 +49,20 @@ export class BlogService {
         ],
       },
     });
+  }
 
-    // Redis 클라이언트 초기화
-    this.redis = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
-      db: this.configService.get<number>('REDIS_DB'),
-    });
-
-    // 서버 시작시 최초 데이터 로드
-    this.updateFeeds();
+  async onModuleInit(): Promise<void> {
+    await this.collectFeeds();
   }
 
   @Interval(UPDATE_INTERVAL)
   async updateFeeds() {
+    if (this.isUpdating) {
+      this.logger.warn('블로그 피드 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
+      return;
+    }
+
+    this.isUpdating = true;
     this.logger.log('Updating blog feeds...');
 
     try {
@@ -72,12 +75,25 @@ export class BlogService {
       this.logger.log('Blog feeds update completed');
     } catch (error) {
       this.logger.error(`Error in feed update process: ${error.message}`);
+    } finally {
+      this.isUpdating = false;
     }
   }
 
-  private async collectFeeds() {
-    for (const [company, info] of Object.entries(TECH_BLOG_RSS)) {
+  private async collectFeeds(
+    companies: string[] = Object.keys(TECH_BLOG_RSS),
+  ): Promise<void> {
+    for (const company of companies) {
+      const info = TECH_BLOG_RSS[company as keyof typeof TECH_BLOG_RSS];
+      if (!info) {
+        continue;
+      }
+
       try {
+        const existingPosts = await this.getCompanyPostsFromRedis(company);
+        const existingPostMap = new Map(
+          existingPosts.map((post) => [post.id, post]),
+        );
         const feed = await this.parser.parseURL(info.url);
         this.logger.debug(
           `Fetched ${info.name} feed: ${feed.items.length} items`,
@@ -97,18 +113,40 @@ export class BlogService {
               .trim();
           }
 
+          const sourceTitle = item.title?.trim() || '';
+          const sourceDescription = description || item.contentSnippet || '';
+          const id = item.guid || item.link || '';
+          const publishDate = new Date(
+            item.pubDate || item.isoDate || item.updated || Date.now(),
+          );
+          const existingPost = existingPostMap.get(id);
+          const canReuseExistingPost = Boolean(
+            existingPost &&
+              existingPost.originalTitle === sourceTitle &&
+              existingPost.originalDescription === sourceDescription,
+          );
+
           const post: BlogPost = {
-            id: item.guid || item.link || '',
+            id,
             company: info.name,
-            title: item.title?.trim() || '',
-            description: description || item.contentSnippet || '',
+            title:
+              canReuseExistingPost && existingPost
+                ? existingPost.title
+                : sourceTitle,
+            description:
+              canReuseExistingPost && existingPost
+              ? existingPost.description
+              : sourceDescription,
+            originalTitle: sourceTitle,
+            originalDescription: sourceDescription,
             link: item.link || item.guid || '',
             author:
               item.creator || item.author || item['dc:creator'] || undefined,
-            publishDate: new Date(
-              item.pubDate || item.isoDate || item.updated || Date.now(),
-            ),
-            isTranslated: false,
+            publishDate,
+            isTranslated:
+              canReuseExistingPost && existingPost
+                ? existingPost.isTranslated
+                : false,
           };
 
           posts.push(post);
@@ -116,10 +154,9 @@ export class BlogService {
 
         // Redis에 저장
         await this.saveCompanyPostsToRedis(company, posts);
-        await this.redis.set(
+        await this.redisService.set(
           `${REDIS_KEYS.BLOG_LAST_UPDATE}${company}`,
           new Date().toISOString(),
-          'EX',
           DEFAULT_REDIS_TTL,
         );
 
@@ -140,14 +177,19 @@ export class BlogService {
 
         for (const post of untranslatedPosts) {
           try {
+            const sourceTitle = post.originalTitle ?? post.title;
+            const sourceDescription =
+              post.originalDescription ?? post.description;
             const translatedTitle = await this.translationService.translate(
-              post.title,
+              sourceTitle,
             );
             const translatedDescription =
-              await this.translationService.translate(post.description);
+              await this.translationService.translate(sourceDescription);
 
             post.title = translatedTitle;
             post.description = translatedDescription;
+            post.originalTitle = sourceTitle;
+            post.originalDescription = sourceDescription;
             post.isTranslated = true;
 
             // 번역된 포스트 업데이트
@@ -168,14 +210,15 @@ export class BlogService {
 
   private async getCompanyPostsFromRedis(company: string): Promise<BlogPost[]> {
     const companyKey = `${REDIS_KEYS.BLOG_COMPANY}${company}`;
-    const postsJson = await this.redis.get(companyKey);
+    const redisPosts = await this.redisService.get<RedisBlogPost[]>(companyKey);
 
-    if (!postsJson) return [];
+    if (!redisPosts) return [];
 
-    const redisPosts: RedisBlogPost[] = JSON.parse(postsJson);
     return redisPosts.map((post) => ({
       ...post,
       publishDate: new Date(post.publishDate),
+      originalTitle: post.originalTitle ?? post.title,
+      originalDescription: post.originalDescription ?? post.description,
     }));
   }
 
@@ -186,12 +229,7 @@ export class BlogService {
       publishDate: post.publishDate.toISOString(),
     }));
 
-    await this.redis.set(
-      companyKey,
-      JSON.stringify(redisPosts),
-      'EX',
-      DEFAULT_REDIS_TTL,
-    );
+    await this.redisService.set(companyKey, redisPosts, DEFAULT_REDIS_TTL);
   }
 
   async getAllPosts(
@@ -203,6 +241,14 @@ export class BlogService {
     for (const company of Object.keys(TECH_BLOG_RSS)) {
       const posts = await this.getCompanyPostsFromRedis(company);
       allPosts.push(...posts);
+    }
+
+    if (allPosts.length === 0) {
+      await this.collectFeeds();
+      for (const company of Object.keys(TECH_BLOG_RSS)) {
+        const posts = await this.getCompanyPostsFromRedis(company);
+        allPosts.push(...posts);
+      }
     }
 
     const sortedPosts = allPosts.sort(
@@ -230,12 +276,17 @@ export class BlogService {
     page: number = 1,
     limit: number = 10,
   ): Promise<BlogResponseDto> {
-    const companyInfo = TECH_BLOG_RSS[company];
+    const companyInfo = TECH_BLOG_RSS[company as keyof typeof TECH_BLOG_RSS];
     if (!companyInfo) {
-      throw new Error(`Company ${company} not found`);
+      throw new NotFoundException(`Company ${company} not found`);
     }
 
-    const posts = await this.getCompanyPostsFromRedis(company);
+    let posts = await this.getCompanyPostsFromRedis(company);
+    if (posts.length === 0) {
+      await this.collectFeeds([company]);
+      posts = await this.getCompanyPostsFromRedis(company);
+    }
+
     const total = posts.length;
     const startIndex = (page - 1) * limit;
     const items = posts
@@ -253,7 +304,8 @@ export class BlogService {
     page: number,
     limit: number,
   ): PaginationMetaDto {
-    const totalPages = Math.ceil(total / limit);
+    const safeLimit = limit > 0 ? limit : 1;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
     return {
       totalCount: total,
       currentPage: page,

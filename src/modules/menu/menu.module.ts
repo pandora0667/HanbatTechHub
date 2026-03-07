@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { MenuController } from './menu.controller';
 import { MenuService } from './menu.service';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [RedisModule],
   controllers: [MenuController],
   providers: [MenuService],
 })

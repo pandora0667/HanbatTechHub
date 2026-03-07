@@ -1,9 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-// ioredis 타입을 명시적으로 지정합니다
-// @ts-ignore
-import { Redis } from 'ioredis';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { RedisService } from '../redis/redis.service';
@@ -24,32 +20,34 @@ import {
 } from './constants/notice.constant';
 
 @Injectable()
-export class NoticeService {
+export class NoticeService implements OnModuleInit {
   private readonly logger = new Logger(NoticeService.name);
   private readonly baseUrl =
     'https://www.hanbat.ac.kr/bbs/BBSMSTR_000000001001/list.do';
   private readonly detailBaseUrl =
     'https://www.hanbat.ac.kr/bbs/BBSMSTR_000000001001/view.do';
-  private readonly redis: Redis;
+  private isUpdating = false;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly noticeRepository: NoticeRepository,
-  ) {
-    this.redis = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
-      db: this.configService.get<number>('REDIS_DB'),
-    });
+  ) {}
 
-    // 서버 시작시 최초 데이터 로드
-    this.updateNoticeData();
+  async onModuleInit(): Promise<void> {
+    await this.updateNoticeData();
   }
 
   @Cron(NOTICE_UPDATE_CRON)
   async updateNoticeData() {
+    if (this.isUpdating) {
+      this.logger.warn(
+        '공지사항 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.',
+      );
+      return;
+    }
+
+    this.isUpdating = true;
+
     try {
       this.logger.log('공지사항 데이터 업데이트 시작...');
 
@@ -62,37 +60,18 @@ export class NoticeService {
       const newNotices = notices.filter((notice) => notice.isNew);
       const todayNotices = this.filterTodayNotices(notices);
 
-      // Redis에 저장
-      await Promise.all([
-        this.redis.set(
-          REDIS_KEYS.NOTICE_LIST,
-          JSON.stringify(regularNotices),
-          'EX',
-          NOTICE_CACHE_TTL,
-        ),
-        this.redis.set(
-          REDIS_KEYS.NOTICE_FEATURED,
-          JSON.stringify(featuredNotices),
-          'EX',
-          NOTICE_CACHE_TTL,
-        ),
-        this.redis.set(
-          REDIS_KEYS.NOTICE_NEW,
-          JSON.stringify(newNotices),
-          'EX',
-          NOTICE_CACHE_TTL,
-        ),
-        this.redis.set(
-          REDIS_KEYS.NOTICE_TODAY,
-          JSON.stringify(todayNotices),
-          'EX',
-          NOTICE_CACHE_TTL,
-        ),
-      ]);
+      await this.cacheNoticeGroups(
+        regularNotices,
+        featuredNotices,
+        newNotices,
+        todayNotices,
+      );
 
       this.logger.log('공지사항 데이터 업데이트 완료');
     } catch (error) {
       this.logger.error(`공지사항 데이터 업데이트 실패: ${error.message}`);
+    } finally {
+      this.isUpdating = false;
     }
   }
 
@@ -105,7 +84,23 @@ export class NoticeService {
       return cachedNotices;
     }
 
-    const notices = await this.noticeRepository.getNotices();
+    let notices = await this.noticeRepository.getNotices();
+    if (notices.length === 0) {
+      const fetchedNotices = await this.fetchNoticeList();
+      const regularNotices = fetchedNotices.filter((notice) => notice.no !== '공지');
+      const featuredNotices = fetchedNotices.filter((notice) => notice.no === '공지');
+      const newNotices = fetchedNotices.filter((notice) => notice.isNew);
+      const todayNotices = this.filterTodayNotices(fetchedNotices);
+
+      await this.cacheNoticeGroups(
+        regularNotices,
+        featuredNotices,
+        newNotices,
+        todayNotices,
+      );
+      notices = regularNotices;
+    }
+
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const total = notices.length;
@@ -122,24 +117,23 @@ export class NoticeService {
 
   async getNewNotices(): Promise<NoticeListResponseDto> {
     try {
-      const cachedNotices = await this.redis.get(REDIS_KEYS.NOTICE_NEW);
+      const cachedNotices =
+        await this.redisService.get<NoticeItemDto[]>(REDIS_KEYS.NOTICE_NEW);
       if (cachedNotices) {
-        const notices = JSON.parse(cachedNotices);
         return {
-          items: notices,
-          meta: this.createPaginationMeta(notices.length, 1, notices.length),
+          items: cachedNotices,
+          meta: this.createPaginationMeta(
+            cachedNotices.length,
+            1,
+            cachedNotices.length,
+          ),
         };
       }
 
       const notices = await this.fetchNoticeList();
       const newNotices = notices.filter((notice) => notice.isNew);
 
-      await this.redis.set(
-        REDIS_KEYS.NOTICE_NEW,
-        JSON.stringify(newNotices),
-        'EX',
-        NOTICE_CACHE_TTL,
-      );
+      await this.redisService.set(REDIS_KEYS.NOTICE_NEW, newNotices, NOTICE_CACHE_TTL);
 
       return {
         items: newNotices,
@@ -157,22 +151,25 @@ export class NoticeService {
 
   async getFeaturedNotices(): Promise<NoticeListResponseDto> {
     try {
-      const cachedNotices = await this.redis.get(REDIS_KEYS.NOTICE_FEATURED);
+      const cachedNotices =
+        await this.redisService.get<NoticeItemDto[]>(REDIS_KEYS.NOTICE_FEATURED);
       if (cachedNotices) {
-        const notices = JSON.parse(cachedNotices);
         return {
-          items: notices,
-          meta: this.createPaginationMeta(notices.length, 1, notices.length),
+          items: cachedNotices,
+          meta: this.createPaginationMeta(
+            cachedNotices.length,
+            1,
+            cachedNotices.length,
+          ),
         };
       }
 
       const notices = await this.fetchNoticeList();
       const featuredNotices = notices.filter((notice) => notice.no === '공지');
 
-      await this.redis.set(
+      await this.redisService.set(
         REDIS_KEYS.NOTICE_FEATURED,
-        JSON.stringify(featuredNotices),
-        'EX',
+        featuredNotices,
         NOTICE_CACHE_TTL,
       );
 
@@ -192,22 +189,25 @@ export class NoticeService {
 
   async getTodayNotices(): Promise<NoticeListResponseDto> {
     try {
-      const cachedNotices = await this.redis.get(REDIS_KEYS.NOTICE_TODAY);
+      const cachedNotices =
+        await this.redisService.get<NoticeItemDto[]>(REDIS_KEYS.NOTICE_TODAY);
       if (cachedNotices) {
-        const notices = JSON.parse(cachedNotices);
         return {
-          items: notices,
-          meta: this.createPaginationMeta(notices.length, 1, notices.length),
+          items: cachedNotices,
+          meta: this.createPaginationMeta(
+            cachedNotices.length,
+            1,
+            cachedNotices.length,
+          ),
         };
       }
 
       const notices = await this.fetchNoticeList();
       const todayNotices = this.filterTodayNotices(notices);
 
-      await this.redis.set(
+      await this.redisService.set(
         REDIS_KEYS.NOTICE_TODAY,
-        JSON.stringify(todayNotices),
-        'EX',
+        todayNotices,
         NOTICE_CACHE_TTL,
       );
 
@@ -229,21 +229,17 @@ export class NoticeService {
     try {
       // Redis에서 공지사항 상세 정보 확인
       const cacheKey = `${REDIS_KEYS.NOTICE_DETAIL}${nttId}`;
-      const cachedDetail = await this.redis.get(cacheKey);
+      const cachedDetail =
+        await this.redisService.get<NoticeDetailResponseDto>(cacheKey);
       if (cachedDetail) {
-        return JSON.parse(cachedDetail);
+        return cachedDetail;
       }
 
       // 캐시가 없으면 직접 가져오기
       const detail = await this.fetchNoticeDetail(nttId);
 
       // Redis에 저장 (상세 정보는 24시간 캐싱)
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(detail),
-        'EX',
-        NOTICE_DETAIL_CACHE_TTL,
-      );
+      await this.redisService.set(cacheKey, detail, NOTICE_DETAIL_CACHE_TTL);
 
       return detail;
     } catch (error) {
@@ -380,7 +376,8 @@ export class NoticeService {
     page: number,
     limit: number,
   ): PaginationMetaDto {
-    const totalPages = Math.ceil(total / limit);
+    const safeLimit = limit > 0 ? limit : 1;
+    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
     return {
       totalCount: total,
       currentPage: page,
@@ -388,5 +385,27 @@ export class NoticeService {
       hasNextPage: page < totalPages,
       hasPreviousPage: page > 1,
     };
+  }
+
+  private async cacheNoticeGroups(
+    regularNotices: NoticeItemDto[],
+    featuredNotices: NoticeItemDto[],
+    newNotices: NoticeItemDto[],
+    todayNotices: NoticeItemDto[],
+  ): Promise<void> {
+    await Promise.all([
+      this.noticeRepository.saveNotices(regularNotices),
+      this.redisService.set(
+        REDIS_KEYS.NOTICE_FEATURED,
+        featuredNotices,
+        NOTICE_CACHE_TTL,
+      ),
+      this.redisService.set(REDIS_KEYS.NOTICE_NEW, newNotices, NOTICE_CACHE_TTL),
+      this.redisService.set(
+        REDIS_KEYS.NOTICE_TODAY,
+        todayNotices,
+        NOTICE_CACHE_TTL,
+      ),
+    ]);
   }
 }

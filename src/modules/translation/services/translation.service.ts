@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { GoogleTranslateProvider } from '../providers/google-translate.provider';
 
 export interface TranslationResult {
@@ -14,7 +13,6 @@ export class TranslationService {
   private readonly logger = new Logger(TranslationService.name);
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly googleTranslateProvider: GoogleTranslateProvider,
   ) {}
 
@@ -45,9 +43,6 @@ export class TranslationService {
 
       const translatedTitle = await this.translate(title);
       const translatedDescription = await this.translate(description);
-
-      this.logger.debug(`Translated title: ${translatedTitle}`);
-      this.logger.debug(`Translated description: ${translatedDescription}`);
 
       return {
         success: true,

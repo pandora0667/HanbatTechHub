@@ -58,10 +58,8 @@ export class KakaoCrawler extends BaseJobCrawler {
         },
       });
 
-      this.logger.debug('API Response:', JSON.stringify(response, null, 2));
       this.logger.debug(
-        'API Response data:',
-        JSON.stringify(response.data, null, 2),
+        `Fetched Kakao job payload with ${response?.jobList?.length || 0} items`,
       );
 
       // API 응답에서 채용 공고 추출
@@ -177,20 +175,16 @@ export class KakaoCrawler extends BaseJobCrawler {
 
     // Add skills from qualification field
     const qualification = job.qualification || '';
-    this.logger.debug('Qualification text:', qualification);
-
     const skillMatches = qualification.match(
       /(?:Java|Kotlin|Spring|Kubernetes|Docker|Linux|MySQL|NoSQL|Redis|Elasticsearch|Kafka|Python|JavaScript|TypeScript|React|Vue|Angular|Node\.js|AWS|GCP|Azure|CI\/CD|Git|Swift|SwiftUI|Objective-C|iOS|Android|Golang|Shell|Ansible|Spark|HBase|Hadoop|\bAI\b|Machine Learning|Deep Learning)[a-zA-Z0-9.]*\b/g,
     );
 
     if (skillMatches) {
-      this.logger.debug('Found skills in qualification:', skillMatches);
       skillMatches.forEach((skill) => skills.add(skill));
     }
 
     // Add skills from skillSetList
     if (job.skillSetList) {
-      this.logger.debug('SkillSetList:', job.skillSetList);
       job.skillSetList.forEach((skillSet: any) => {
         if (
           skillSet.skillSetName &&
@@ -201,9 +195,7 @@ export class KakaoCrawler extends BaseJobCrawler {
       });
     }
 
-    const extractedSkills = Array.from(skills);
-    this.logger.debug('Extracted skills:', extractedSkills);
-    return extractedSkills;
+    return Array.from(skills);
   }
 
   private async transformJobData(jobs: KakaoJobData[]): Promise<JobPosting[]> {

@@ -3,6 +3,8 @@ export interface BlogPost {
   company: string;
   title: string;
   description: string;
+  originalTitle?: string;
+  originalDescription?: string;
   link: string;
   author?: string;
   publishDate: Date;

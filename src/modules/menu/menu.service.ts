@@ -1,7 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { ConfigService } from '@nestjs/config';
-import { Redis } from 'ioredis';
 import axios from 'axios';
 import { MenuItemDto, MenuResponseDto } from './dto/menu.dto';
 import {
@@ -9,59 +7,54 @@ import {
   MENU_UPDATE_CRON,
   MENU_CACHE_TTL,
 } from './constants/menu.constant';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
-export class MenuService {
+export class MenuService implements OnModuleInit {
   private readonly logger = new Logger(MenuService.name);
   private readonly baseUrl =
     'https://www.hanbat.ac.kr/prog/carteGuidance/kor/sub06_030301/C1/calendar.do';
   private readonly ajaxUrl =
     'https://www.hanbat.ac.kr/prog/carteGuidance/kor/sub06_030301/C1/getCalendar.do';
-  private readonly redis: Redis;
+  private isUpdating = false;
 
-  constructor(private readonly configService: ConfigService) {
-    this.redis = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
-      db: this.configService.get<number>('REDIS_DB'),
-    });
+  constructor(private readonly redisService: RedisService) {}
 
-    // 서버 시작시 최초 데이터 로드
-    this.updateMenuData();
+  async onModuleInit(): Promise<void> {
+    await this.updateMenuData();
   }
 
   @Cron(MENU_UPDATE_CRON)
   async updateMenuData() {
+    if (this.isUpdating) {
+      this.logger.warn('메뉴 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
+      return;
+    }
+
+    this.isUpdating = true;
+
     try {
       this.logger.log('메뉴 데이터 업데이트 시작...');
 
       // 오늘 날짜 기준으로 이번 주의 메뉴 가져오기
       const weeklyMenu = await this.fetchWeeklyMenu();
+      const mondayDate = this.formatDate(this.getMondayDate(new Date()));
 
       // Redis에 저장
-      const weekKey = `${REDIS_KEYS.MENU_WEEKLY}${this.formatDate(new Date())}`;
-      await this.redis.set(
-        weekKey,
-        JSON.stringify(weeklyMenu),
-        'EX',
-        MENU_CACHE_TTL,
-      );
+      const weekKey = `${REDIS_KEYS.MENU_WEEKLY}${mondayDate}`;
+      await this.redisService.set(weekKey, weeklyMenu, MENU_CACHE_TTL);
 
       // 각 날짜별 메뉴도 따로 저장
       for (const menu of weeklyMenu) {
         const dateKey = `${REDIS_KEYS.MENU_DATE}${menu.date}`;
-        await this.redis.set(
-          dateKey,
-          JSON.stringify(menu),
-          'EX',
-          MENU_CACHE_TTL,
-        );
+        await this.redisService.set(dateKey, menu, MENU_CACHE_TTL);
       }
 
       this.logger.log('메뉴 데이터 업데이트 완료');
     } catch (error) {
       this.logger.error(`메뉴 데이터 업데이트 실패: ${error.message}`);
+    } finally {
+      this.isUpdating = false;
     }
   }
 
@@ -76,9 +69,9 @@ export class MenuService {
       const cacheKey = `${REDIS_KEYS.MENU_DATE}${formattedDate}`;
 
       // Redis에서 메뉴 데이터 확인
-      const cachedMenu = await this.redis.get(cacheKey);
+      const cachedMenu = await this.redisService.get<MenuResponseDto>(cacheKey);
       if (cachedMenu) {
-        return JSON.parse(cachedMenu);
+        return cachedMenu;
       }
 
       // 캐시에 없으면 직접 가져오기
@@ -94,12 +87,7 @@ export class MenuService {
       const menuResponse = this.formatMenuResponse(menuItems, formattedDate);
 
       // Redis에 저장
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(menuResponse),
-        'EX',
-        MENU_CACHE_TTL,
-      );
+      await this.redisService.set(cacheKey, menuResponse, MENU_CACHE_TTL);
 
       return menuResponse;
     } catch (error) {
@@ -120,21 +108,17 @@ export class MenuService {
       const cacheKey = `${REDIS_KEYS.MENU_WEEKLY}${formattedMondayDate}`;
 
       // Redis에서 주간 메뉴 데이터 확인
-      const cachedWeeklyMenu = await this.redis.get(cacheKey);
+      const cachedWeeklyMenu =
+        await this.redisService.get<MenuResponseDto[]>(cacheKey);
       if (cachedWeeklyMenu) {
-        return JSON.parse(cachedWeeklyMenu);
+        return cachedWeeklyMenu;
       }
 
       // 캐시에 없으면 직접 가져오기
       const weeklyMenu = await this.fetchWeeklyMenu(startDate);
 
       // Redis에 저장
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(weeklyMenu),
-        'EX',
-        MENU_CACHE_TTL,
-      );
+      await this.redisService.set(cacheKey, weeklyMenu, MENU_CACHE_TTL);
 
       return weeklyMenu;
     } catch (error) {

@@ -5,6 +5,7 @@ import {
   BlogResponseDto,
   CompanyListResponseDto,
 } from './dto/blog-response.dto';
+import { BlogQueryDto } from './dto/blog-query.dto';
 
 @ApiTags('blogs')
 @Controller('blogs')
@@ -21,11 +22,10 @@ export class BlogController {
     type: BlogResponseDto,
   })
   async getAllPosts(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query() query: BlogQueryDto,
   ): Promise<BlogResponseDto> {
-    this.logger.log(`Getting all posts: page=${page}, limit=${limit}`);
-    return this.blogService.getAllPosts(page, limit);
+    this.logger.log(`Getting all posts: page=${query.page}, limit=${query.limit}`);
+    return this.blogService.getAllPosts(query.page, query.limit);
   }
 
   @Get('companies')
@@ -49,12 +49,11 @@ export class BlogController {
   })
   async getCompanyPosts(
     @Param('company') company: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query() query: BlogQueryDto,
   ): Promise<BlogResponseDto> {
     this.logger.log(
-      `Getting posts for company ${company}: page=${page}, limit=${limit}`,
+      `Getting posts for company ${company}: page=${query.page}, limit=${query.limit}`,
     );
-    return this.blogService.getCompanyPosts(company, page, limit);
+    return this.blogService.getCompanyPosts(company, query.page, query.limit);
   }
 }

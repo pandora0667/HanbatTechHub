@@ -3,8 +3,9 @@ import {
   Logger,
   InternalServerErrorException,
   Inject,
+  NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { RedisService } from '../../redis/redis.service';
 import { IJobCrawler } from '../interfaces/job-crawler.interface';
@@ -31,21 +32,22 @@ export interface PaginatedResponse<T> {
 }
 
 @Injectable()
-export class JobsService {
+export class JobsService implements OnModuleInit {
   private readonly logger = new Logger(JobsService.name);
   private readonly crawlers: Map<CompanyType, IJobCrawler>;
+  private isUpdatingCache = false;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     @Inject(CRAWLER_TOKEN) private readonly jobCrawlers: IJobCrawler[],
   ) {
     this.crawlers = new Map(
       jobCrawlers.map((crawler) => [crawler.company, crawler]),
     );
+  }
 
-    // 서버 시작시 초기 데이터 로드
-    this.initializeJobs();
+  async onModuleInit(): Promise<void> {
+    await this.initializeJobs();
   }
 
   /**
@@ -53,16 +55,15 @@ export class JobsService {
    */
   private async initializeJobs(): Promise<void> {
     try {
-      // Redis 캐시 초기화 (jobs:* 패턴의 키만)
-      await this.redisService.initializeServiceCache('jobs');
+      // Redis 캐시 초기화 (hbnu:jobs:* 패턴의 키만)
+      await this.redisService.initializeServiceCache('hbnu:jobs');
       this.logger.log('Jobs cache initialized');
 
       // 초기 데이터 로드
       await this.updateJobCache();
       this.logger.log('Initial job data loaded');
     } catch (error) {
-      this.logger.error('Failed to initialize jobs:', error);
-      throw new InternalServerErrorException('Failed to initialize jobs');
+      this.logger.error(`Failed to initialize jobs: ${error.message}`);
     }
   }
 
@@ -154,7 +155,7 @@ export class JobsService {
     try {
       const crawler = this.crawlers.get(company);
       if (!crawler) {
-        throw new Error(`Crawler not found for company: ${company}`);
+        throw new NotFoundException(`Crawler not found for company: ${company}`);
       }
 
       // 캐시 키 생성
@@ -173,7 +174,7 @@ export class JobsService {
       // 캐시에 없는 경우 데이터 가져오기 (재시도 로직 적용)
       this.logger.debug(`Cache miss for key: ${cacheKey}`);
       const jobs = await this.executeWithRetry(
-        () => crawler.fetchJobs(query),
+        () => crawler.fetchJobs(),
         `Fetching jobs for ${company}`,
       );
 
@@ -185,6 +186,9 @@ export class JobsService {
       const transformedJobs = this.transformToResponse(filteredJobs);
       return this.paginateResponse(transformedJobs, query);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(
         `Failed to fetch ${company} tech jobs: ${error.message}`,
       );
@@ -196,18 +200,33 @@ export class JobsService {
 
   @Cron(JOBS_UPDATE_CRON)
   async updateJobCache(): Promise<void> {
+    if (this.isUpdatingCache) {
+      this.logger.warn('Job cache update is already running. Skipping overlap.');
+      return;
+    }
+
+    this.isUpdatingCache = true;
+
     try {
       const now = new Date();
       this.logger.log(
         `Updating job cache... [KST: ${now.toLocaleTimeString('ko-KR')}]`,
       );
 
-      // 모든 크롤러에서 데이터 가져오기
-      const tasks = Array.from(this.crawlers.values()).map((crawler) =>
-        this.updateCompanyJobs(crawler),
-      );
+      // 메모리 피크를 줄이기 위해 회사별 크롤링을 순차 처리합니다.
+      const allJobs: JobPosting[] = [];
+      const crawlers = Array.from(this.crawlers.values());
 
-      await Promise.allSettled(tasks);
+      for (const [index, crawler] of crawlers.entries()) {
+        const jobs = await this.updateCompanyJobs(crawler);
+        allJobs.push(...jobs);
+
+        if (index < crawlers.length - 1) {
+          await this.coolDownBetweenCrawlerRuns();
+        }
+      }
+
+      await this.redisService.set(REDIS_KEYS.JOBS_ALL, allJobs, JOBS_CACHE_TTL);
 
       // 마지막 업데이트 시간 기록
       await this.redisService.set(
@@ -220,10 +239,12 @@ export class JobsService {
       );
     } catch (error) {
       this.logger.error(`Job cache update failed: ${error.message}`);
+    } finally {
+      this.isUpdatingCache = false;
     }
   }
 
-  private async updateCompanyJobs(crawler: IJobCrawler): Promise<void> {
+  private async updateCompanyJobs(crawler: IJobCrawler): Promise<JobPosting[]> {
     try {
       this.logger.log(`Updating jobs for ${crawler.company}...`);
 
@@ -239,25 +260,24 @@ export class JobsService {
       // 캐싱
       await this.redisService.set(companyKey, jobs, JOBS_CACHE_TTL);
 
-      // 전체 기술 직군 캐시에도 추가
-      const allTechKey = REDIS_KEYS.JOBS_ALL;
-      const existingJobs =
-        (await this.redisService.get<JobPosting[]>(allTechKey)) || [];
-
-      // 회사 데이터 업데이트
-      const filteredJobs = existingJobs.filter(
-        (job) => job.company !== crawler.company,
-      );
-      const updatedJobs = [...filteredJobs, ...jobs];
-
-      await this.redisService.set(allTechKey, updatedJobs, JOBS_CACHE_TTL);
-
       this.logger.log(`Updated ${jobs.length} jobs for ${crawler.company}`);
+      return jobs;
     } catch (error) {
       this.logger.error(
         `Failed to update jobs for ${crawler.company}: ${error.message}`,
       );
+      return [];
     }
+  }
+
+  private async coolDownBetweenCrawlerRuns(): Promise<void> {
+    if (JOB_CRAWLING_CONFIG.REQUEST_DELAY <= 0) {
+      return;
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, JOB_CRAWLING_CONFIG.REQUEST_DELAY),
+    );
   }
 
   private async fetchAllTechJobs(
@@ -268,7 +288,9 @@ export class JobsService {
       if (query.company) {
         const crawler = this.crawlers.get(query.company);
         if (!crawler) {
-          throw new Error(`Crawler not found for company: ${query.company}`);
+          throw new NotFoundException(
+            `Crawler not found for company: ${query.company}`,
+          );
         }
         return await this.executeWithRetry(
           () => crawler.fetchJobs(),
@@ -363,8 +385,10 @@ export class JobsService {
   ): PaginatedResponse<JobPostingResponseDto> {
     const page = query.page || 1;
     const limit = query.limit || 10;
-    const start = (page - 1) * limit;
-    const end = start + limit;
+    const safePage = page > 0 ? page : 1;
+    const safeLimit = limit > 0 ? limit : 10;
+    const start = (safePage - 1) * safeLimit;
+    const end = start + safeLimit;
 
     const paginatedData = jobs.slice(start, end);
 
@@ -372,9 +396,10 @@ export class JobsService {
       data: paginatedData,
       meta: {
         total: jobs.length,
-        page: page,
-        limit: limit,
-        totalPages: Math.ceil(jobs.length / limit),
+        page: safePage,
+        limit: safeLimit,
+        totalPages:
+          jobs.length === 0 ? 0 : Math.ceil(jobs.length / safeLimit),
       },
     };
   }

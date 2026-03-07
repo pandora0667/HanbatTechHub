@@ -14,11 +14,57 @@ import {
   LOCATION_TYPE,
 } from '../constants/job-codes.constant';
 import { HttpClientUtil } from '../utils/http-client.util';
-import * as cheerio from 'cheerio';
+
+interface LinePageDataResponse {
+  result?: {
+    data?: {
+      allStrapiJobs?: {
+        edges?: Array<{
+          node: LineJobNode;
+        }>;
+      };
+    };
+  };
+}
+
+interface LineJobNode {
+  strapiId: number;
+  publish?: boolean;
+  is_public?: boolean;
+  is_filters_public?: boolean;
+  until_filled?: boolean;
+  start_date?: string;
+  end_date?: string;
+  title?: string;
+  title_en?: string;
+  employment_type?: Array<{
+    name: string;
+  }>;
+  job_unit?: Array<{
+    name: string;
+  }>;
+  job_fields?: Array<{
+    name: string;
+  }>;
+  companies?: Array<{
+    name: string;
+  }>;
+  cities?: Array<{
+    name: string;
+  }>;
+  regions?: Array<{
+    name: string;
+  }>;
+}
 
 @Injectable()
 export class LineCrawler extends BaseJobCrawler {
   protected readonly logger = new Logger(LineCrawler.name);
+  private static readonly PAGE_DATA_URL =
+    'https://careers.linecorp.com/page-data/ko/jobs/page-data.json';
+  private static readonly TARGET_DEPARTMENT = 'Engineering';
+  private static readonly TARGET_REGION = 'East Asia';
+  private static readonly TARGET_CITIES = ['Gwacheon', 'Bundang'];
 
   constructor(
     protected readonly httpClient: HttpClientUtil,
@@ -31,17 +77,16 @@ export class LineCrawler extends BaseJobCrawler {
     );
   }
 
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(_query?: GetJobsQueryDto): Promise<JobPosting[]> {
     this.logger.debug('Starting to fetch LINE jobs...');
 
     try {
-      const url = this.buildUrl(query);
+      const url = this.buildUrl();
       this.logger.debug(`Fetching jobs from: ${url}`);
 
-      const response = await this.httpClient.get(url, {
+      const response = await this.httpClient.get<LinePageDataResponse>(url, {
         headers: {
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          Accept: 'application/json, text/plain, */*',
           'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
           'User-Agent': this.httpClient.getRandomUserAgent(),
           'Cache-Control': 'no-cache',
@@ -49,19 +94,12 @@ export class LineCrawler extends BaseJobCrawler {
         },
       });
 
-      if (!response || typeof response !== 'string') {
-        throw new Error('Invalid response data');
-      }
-
-      this.logger.debug('Response received, length:', response.length);
-
-      // HTML 파싱
       const jobs = this.parseJobListings(response);
 
       if (jobs.length === 0) {
-        this.logger.warn('No jobs found in the parsed HTML');
+        this.logger.warn('No jobs found in LINE page-data response');
       } else {
-        this.logger.debug(`Successfully parsed ${jobs.length} jobs`);
+        this.logger.debug(`Successfully parsed ${jobs.length} LINE jobs`);
       }
 
       return jobs;
@@ -71,100 +109,29 @@ export class LineCrawler extends BaseJobCrawler {
     }
   }
 
-  private buildUrl(query?: GetJobsQueryDto): string {
+  private buildUrl(): string {
     const params = new URLSearchParams({
-      ca: 'Engineering', // 직군 필터
-      ci: 'Gwacheon,Bundang', // 지역 필터
-      co: 'East Asia', // 지역 그룹
+      ca: LineCrawler.TARGET_DEPARTMENT,
+      ci: LineCrawler.TARGET_CITIES.join(','),
+      co: LineCrawler.TARGET_REGION,
     });
 
-    if (query?.page) {
-      params.append('page', query.page.toString());
-    }
-
-    const url = `${this.baseUrl}?${params.toString()}`;
+    const url = `${LineCrawler.PAGE_DATA_URL}?${params.toString()}`;
     this.logger.debug(`Built URL: ${url}`);
     return url;
   }
 
-  private parseJobListings(html: string): JobPosting[] {
+  private parseJobListings(response: LinePageDataResponse): JobPosting[] {
     try {
-      const $ = cheerio.load(html);
-      const jobs: JobPosting[] = [];
+      const edges = response.result?.data?.allStrapiJobs?.edges ?? [];
+      const jobs = edges
+        .map((edge) => edge.node)
+        .filter((job): job is LineJobNode => Boolean(job))
+        .filter((job) => this.isTargetJob(job))
+        .map((job) => this.transformJob(job))
+        .filter((job): job is JobPosting => job !== null);
 
-      // HTML 구조 디버깅
-      this.logger.debug('HTML structure:', $('body').html()?.substring(0, 500));
-
-      $('.job_list li').each((_, element) => {
-        const $item = $(element);
-        const $link = $item.find('a');
-        const title = $link.find('h3.title').text().trim();
-        const $textFilter = $link.find('.text_filter');
-        const location = $textFilter.find('span').first().text().trim();
-        const department = $textFilter.find('span').eq(2).text().trim();
-        const employmentType = $textFilter.find('span').eq(3).text().trim();
-        const period = $link.find('.date').text().trim();
-
-        // 엔지니어링 직군만 필터링
-        if (department !== 'Engineering') {
-          return;
-        }
-
-        // ID 추출 (URL에서)
-        const id = $link.attr('href')?.split('/').pop() || '';
-
-        // 날짜 처리
-        let startDate: Date = new Date();
-        let endDate: Date = this.getDateMonthLater(1);
-
-        try {
-          const [startDateStr, endDateStr] = period
-            .split('~')
-            .map((date) => date.trim());
-          startDate = new Date(startDateStr);
-          endDate =
-            endDateStr === '채용시까지'
-              ? new Date('2099-12-31')
-              : new Date(endDateStr);
-        } catch {
-          this.logger.warn(`Failed to parse date range: ${period}`);
-        }
-
-        // 기본 템플릿에서 시작하여 데이터 채우기
-        const jobTemplate = this.createJobPostingTemplate();
-        const job: JobPosting = {
-          ...jobTemplate,
-          id,
-          title,
-          company: this.company,
-          department,
-          field: department, // LINE은 department를 field로 사용
-          requirements: {
-            ...jobTemplate.requirements,
-            career: CAREER_TYPE.ANY, // LINE은 경력 정보를 별도로 표시하지 않음
-          },
-          employmentType: this.mapEmploymentType(employmentType),
-          locations: [this.mapLocationType(location)],
-          period: {
-            start: startDate,
-            end: endDate,
-          },
-          url: this.getJobDetailUrl(id),
-          source: {
-            originalId: id,
-            originalUrl: this.getJobDetailUrl(id),
-          },
-          jobCategory: this.inferJobCategory(title),
-        } as JobPosting;
-
-        if (this.validateJob(job)) {
-          jobs.push(job);
-        }
-      });
-
-      this.logger.debug(
-        `Parsed ${jobs.length} engineering jobs from ${this.company}`,
-      );
+      this.logger.debug(`Parsed ${jobs.length} engineering jobs from LINE`);
       return jobs;
     } catch (err) {
       this.handleError('Failed to parse job listings', err);
@@ -172,20 +139,118 @@ export class LineCrawler extends BaseJobCrawler {
     }
   }
 
+  private isTargetJob(job: LineJobNode): boolean {
+    const isPublic = Boolean(
+      job.publish && job.is_public && job.is_filters_public,
+    );
+    const hasEngineeringUnit = (job.job_unit ?? []).some(({ name }) =>
+      name.includes(LineCrawler.TARGET_DEPARTMENT),
+    );
+    const hasTargetRegion = (job.regions ?? []).some(
+      ({ name }) => name === LineCrawler.TARGET_REGION,
+    );
+    const hasTargetCity = (job.cities ?? []).some(({ name }) =>
+      LineCrawler.TARGET_CITIES.includes(name),
+    );
+
+    return isPublic && hasEngineeringUnit && hasTargetRegion && hasTargetCity;
+  }
+
+  private transformJob(job: LineJobNode): JobPosting | null {
+    const id = String(job.strapiId);
+    const title = job.title_en?.trim() || job.title?.trim() || '';
+    const departments = (job.job_unit ?? [])
+      .map(({ name }) => name.trim())
+      .filter(Boolean);
+    const fields = (job.job_fields ?? [])
+      .map(({ name }) => name.trim())
+      .filter(Boolean);
+    const companyNames = (job.companies ?? [])
+      .map(({ name }) => name.trim())
+      .filter(Boolean);
+    const cities = (job.cities ?? [])
+      .map(({ name }) => name.trim())
+      .filter(Boolean);
+    const employmentType = this.mapEmploymentType(
+      job.employment_type?.[0]?.name ?? '',
+    );
+    const locations = cities
+      .map((city) => this.mapLocationType(city))
+      .filter((location, index, values) => values.indexOf(location) === index);
+    const startDate = job.start_date ? new Date(job.start_date) : new Date();
+    const endDate = this.parseEndDate(job);
+    const department =
+      departments.find((name) => name.includes(LineCrawler.TARGET_DEPARTMENT)) ??
+      departments.join(', ');
+    const field = fields.join(', ') || department;
+
+    const jobTemplate = this.createJobPostingTemplate();
+    const now = new Date();
+    const posting: JobPosting = {
+      ...jobTemplate,
+      id,
+      title,
+      company: this.company,
+      department,
+      field,
+      requirements: {
+        ...jobTemplate.requirements,
+        career: CAREER_TYPE.ANY,
+        skills: fields,
+      },
+      employmentType,
+      locations,
+      description: companyNames.join(', '),
+      period: {
+        start: startDate,
+        end: endDate,
+      },
+      url: this.getJobDetailUrl(id),
+      source: {
+        originalId: id,
+        originalUrl: this.getJobDetailUrl(id),
+      },
+      createdAt: jobTemplate.createdAt ?? now,
+      updatedAt: jobTemplate.updatedAt ?? now,
+      tags: [...departments, ...fields, ...companyNames],
+      jobCategory: this.inferJobCategory(title, field),
+      rawData: job,
+    };
+
+    return this.validateJob(posting) ? posting : null;
+  }
+
+  private parseEndDate(job: LineJobNode): Date {
+    if (job.until_filled) {
+      return new Date('2099-12-31T00:00:00.000Z');
+    }
+
+    if (job.end_date) {
+      const parsed = new Date(job.end_date);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return this.getDateMonthLater(1);
+  }
+
   private mapEmploymentType(type: string): EmploymentType {
-    if (type.includes('정규') || type.includes('Full-time')) {
-      return EMPLOYMENT_TYPE.FULL_TIME;
-    } else if (type.includes('계약') || type.includes('Contract')) {
-      return EMPLOYMENT_TYPE.CONTRACT;
-    } else if (type.includes('인턴') || type.includes('Intern')) {
+    if (type.includes('Intern')) {
       return EMPLOYMENT_TYPE.INTERN;
     }
+
+    if (type.includes('Temporary') || type.includes('Contract')) {
+      return EMPLOYMENT_TYPE.CONTRACT;
+    }
+
     return EMPLOYMENT_TYPE.FULL_TIME;
   }
 
   private mapLocationType(location: string): LocationType {
     switch (location) {
       case 'Bundang':
+      case 'Gwacheon':
         return LOCATION_TYPE.BUNDANG;
       case 'Seoul':
         return LOCATION_TYPE.SEOUL;
