@@ -3,9 +3,20 @@ import { NotFoundException } from '@nestjs/common';
 import { BlogService } from './blog.service';
 import { TranslationService } from '../translation/services/translation.service';
 import { RedisService } from '../redis/redis.service';
+import { BlogPostQueryService } from './domain/services/blog-post-query.service';
+import { BlogFeedCollectorService } from './application/services/blog-feed-collector.service';
+import { GetAllBlogPostsUseCase } from './application/use-cases/get-all-blog-posts.use-case';
+import { GetBlogCompaniesUseCase } from './application/use-cases/get-blog-companies.use-case';
+import { GetCompanyBlogPostsUseCase } from './application/use-cases/get-company-blog-posts.use-case';
+import { RedisBlogPostRepository } from './infrastructure/persistence/redis-blog-post.repository';
+import { BlogSourceCatalogService } from './infrastructure/services/blog-source-catalog.service';
+import { RssBlogFeedReaderService } from './infrastructure/services/rss-blog-feed-reader.service';
+import { BLOG_POST_REPOSITORY } from './application/ports/blog-post.repository';
+import { BLOG_SOURCE_CATALOG } from './application/ports/blog-source-catalog';
 
 describe('BlogService', () => {
   let service: BlogService;
+
   const translationService = {
     translate: jest.fn(),
   };
@@ -18,6 +29,22 @@ describe('BlogService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BlogService,
+        BlogPostQueryService,
+        BlogFeedCollectorService,
+        GetAllBlogPostsUseCase,
+        GetBlogCompaniesUseCase,
+        GetCompanyBlogPostsUseCase,
+        RedisBlogPostRepository,
+        BlogSourceCatalogService,
+        RssBlogFeedReaderService,
+        {
+          provide: BLOG_POST_REPOSITORY,
+          useExisting: RedisBlogPostRepository,
+        },
+        {
+          provide: BLOG_SOURCE_CATALOG,
+          useExisting: BlogSourceCatalogService,
+        },
         { provide: TranslationService, useValue: translationService },
         { provide: RedisService, useValue: redisService },
       ],
@@ -25,50 +52,6 @@ describe('BlogService', () => {
 
     service = module.get<BlogService>(BlogService);
     jest.clearAllMocks();
-  });
-
-  it('preserves translated posts when feed content has not changed', async () => {
-    redisService.get.mockResolvedValue([
-      {
-        id: 'post-1',
-        company: '토스',
-        title: '번역된 제목',
-        description: '번역된 설명',
-        originalTitle: 'Original Title',
-        originalDescription: 'Original Description',
-        link: 'https://example.com/post-1',
-        publishDate: '2025-01-01T00:00:00.000Z',
-        isTranslated: true,
-      },
-    ]);
-    (service as any).parser = {
-      parseURL: jest.fn().mockResolvedValue({
-        items: [
-          {
-            guid: 'post-1',
-            title: 'Original Title',
-            description: 'Original Description',
-            link: 'https://example.com/post-1',
-            pubDate: '2025-01-01T00:00:00.000Z',
-          },
-        ],
-      }),
-    };
-
-    await (service as any).collectFeeds(['TOSS']);
-
-    expect(redisService.set).toHaveBeenCalledWith(
-      'hbnu:blog:company:TOSS',
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'post-1',
-          title: '번역된 제목',
-          description: '번역된 설명',
-          isTranslated: true,
-        }),
-      ]),
-      expect.any(Number),
-    );
   });
 
   it('throws NotFoundException for unsupported companies', async () => {

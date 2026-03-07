@@ -6,6 +6,16 @@ import { MenuService } from '../src/modules/menu/menu.service';
 import { NoticeService } from '../src/modules/notice/notice.service';
 import { NoticeRepository } from '../src/modules/notice/notice.repository';
 import { BlogService } from '../src/modules/blog/blog.service';
+import { BlogPostQueryService } from '../src/modules/blog/domain/services/blog-post-query.service';
+import { BlogFeedCollectorService } from '../src/modules/blog/application/services/blog-feed-collector.service';
+import { GetAllBlogPostsUseCase } from '../src/modules/blog/application/use-cases/get-all-blog-posts.use-case';
+import { GetBlogCompaniesUseCase } from '../src/modules/blog/application/use-cases/get-blog-companies.use-case';
+import { GetCompanyBlogPostsUseCase } from '../src/modules/blog/application/use-cases/get-company-blog-posts.use-case';
+import { RedisBlogPostRepository } from '../src/modules/blog/infrastructure/persistence/redis-blog-post.repository';
+import { BlogSourceCatalogService } from '../src/modules/blog/infrastructure/services/blog-source-catalog.service';
+import { RssBlogFeedReaderService } from '../src/modules/blog/infrastructure/services/rss-blog-feed-reader.service';
+import { BLOG_POST_REPOSITORY } from '../src/modules/blog/application/ports/blog-post.repository';
+import { BLOG_SOURCE_CATALOG } from '../src/modules/blog/application/ports/blog-source-catalog';
 import { TranslationService } from '../src/modules/translation/services/translation.service';
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpClientUtil } from '../src/modules/jobs/utils/http-client.util';
@@ -83,6 +93,22 @@ describeLive('Live Integration Smoke', () => {
         NoticeService,
         NoticeRepository,
         BlogService,
+        BlogPostQueryService,
+        BlogFeedCollectorService,
+        GetAllBlogPostsUseCase,
+        GetBlogCompaniesUseCase,
+        GetCompanyBlogPostsUseCase,
+        RedisBlogPostRepository,
+        BlogSourceCatalogService,
+        RssBlogFeedReaderService,
+        {
+          provide: BLOG_POST_REPOSITORY,
+          useExisting: RedisBlogPostRepository,
+        },
+        {
+          provide: BLOG_SOURCE_CATALOG,
+          useExisting: BlogSourceCatalogService,
+        },
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
