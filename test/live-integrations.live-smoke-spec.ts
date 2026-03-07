@@ -3,6 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import { globalAgent as httpGlobalAgent } from 'http';
 import { globalAgent as httpsGlobalAgent } from 'https';
 import { MenuService } from '../src/modules/menu/menu.service';
+import { MenuCalendarService } from '../src/modules/menu/domain/services/menu-calendar.service';
+import { MenuResponseFactoryService } from '../src/modules/menu/domain/services/menu-response-factory.service';
+import { MenuLoaderService } from '../src/modules/menu/application/services/menu-loader.service';
+import { GetMenuByDateUseCase } from '../src/modules/menu/application/use-cases/get-menu-by-date.use-case';
+import { GetWeeklyMenuUseCase } from '../src/modules/menu/application/use-cases/get-weekly-menu.use-case';
+import { UpdateMenuCacheUseCase } from '../src/modules/menu/application/use-cases/update-menu-cache.use-case';
+import { InitializeMenuCacheUseCase } from '../src/modules/menu/application/use-cases/initialize-menu-cache.use-case';
+import { RedisMenuRepository } from '../src/modules/menu/infrastructure/persistence/redis-menu.repository';
+import { HanbatMenuSourceGateway } from '../src/modules/menu/infrastructure/gateways/hanbat-menu-source.gateway';
+import { MENU_CACHE_REPOSITORY } from '../src/modules/menu/application/ports/menu-cache.repository';
+import { MENU_SOURCE_GATEWAY } from '../src/modules/menu/application/ports/menu-source.gateway';
 import { NoticeService } from '../src/modules/notice/notice.service';
 import { NoticeRepository } from '../src/modules/notice/notice.repository';
 import { BlogService } from '../src/modules/blog/blog.service';
@@ -93,6 +104,23 @@ describeLive('Live Integration Smoke', () => {
     moduleRef = await Test.createTestingModule({
       providers: [
         MenuService,
+        MenuCalendarService,
+        MenuResponseFactoryService,
+        MenuLoaderService,
+        GetMenuByDateUseCase,
+        GetWeeklyMenuUseCase,
+        UpdateMenuCacheUseCase,
+        InitializeMenuCacheUseCase,
+        RedisMenuRepository,
+        HanbatMenuSourceGateway,
+        {
+          provide: MENU_CACHE_REPOSITORY,
+          useExisting: RedisMenuRepository,
+        },
+        {
+          provide: MENU_SOURCE_GATEWAY,
+          useExisting: HanbatMenuSourceGateway,
+        },
         NoticeService,
         NoticeRepository,
         BlogService,

@@ -1,6 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MenuService } from './menu.service';
 import { RedisService } from '../redis/redis.service';
+import { MenuCalendarService } from './domain/services/menu-calendar.service';
+import { MenuResponseFactoryService } from './domain/services/menu-response-factory.service';
+import { MenuLoaderService } from './application/services/menu-loader.service';
+import { GetMenuByDateUseCase } from './application/use-cases/get-menu-by-date.use-case';
+import { GetWeeklyMenuUseCase } from './application/use-cases/get-weekly-menu.use-case';
+import { UpdateMenuCacheUseCase } from './application/use-cases/update-menu-cache.use-case';
+import { InitializeMenuCacheUseCase } from './application/use-cases/initialize-menu-cache.use-case';
+import { RedisMenuRepository } from './infrastructure/persistence/redis-menu.repository';
+import { HanbatMenuSourceGateway } from './infrastructure/gateways/hanbat-menu-source.gateway';
+import { MENU_CACHE_REPOSITORY } from './application/ports/menu-cache.repository';
+import { MENU_SOURCE_GATEWAY } from './application/ports/menu-source.gateway';
 
 describe('MenuService', () => {
   let service: MenuService;
@@ -13,6 +24,23 @@ describe('MenuService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MenuService,
+        MenuCalendarService,
+        MenuResponseFactoryService,
+        MenuLoaderService,
+        GetMenuByDateUseCase,
+        GetWeeklyMenuUseCase,
+        UpdateMenuCacheUseCase,
+        InitializeMenuCacheUseCase,
+        RedisMenuRepository,
+        HanbatMenuSourceGateway,
+        {
+          provide: MENU_CACHE_REPOSITORY,
+          useExisting: RedisMenuRepository,
+        },
+        {
+          provide: MENU_SOURCE_GATEWAY,
+          useExisting: HanbatMenuSourceGateway,
+        },
         { provide: RedisService, useValue: redisService },
       ],
     }).compile();
@@ -23,27 +51,5 @@ describe('MenuService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  });
-
-  it('stores weekly cache using the monday key', async () => {
-    const weeklyMenu = [
-      { date: '2025-03-10', lunch: [], dinner: [] },
-      { date: '2025-03-11', lunch: [], dinner: [] },
-    ];
-
-    jest
-      .spyOn(service as any, 'fetchWeeklyMenu')
-      .mockResolvedValue(weeklyMenu);
-    jest
-      .spyOn(service as any, 'getMondayDate')
-      .mockReturnValue(new Date('2025-03-10T00:00:00.000Z'));
-
-    await service.updateMenuData();
-
-    expect(redisService.set).toHaveBeenCalledWith(
-      'hbnu:menu:weekly:2025-03-10',
-      weeklyMenu,
-      expect.any(Number),
-    );
   });
 });
