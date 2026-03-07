@@ -10,6 +10,18 @@ export class RedisJobPostingCacheRepository
 {
   constructor(private readonly redisService: RedisService) {}
 
+  async initializeJobsCache(): Promise<void> {
+    await this.redisService.initializeServiceCache('hbnu:jobs');
+  }
+
+  async getSearchJobs(cacheKey: string): Promise<JobPosting[] | null> {
+    return this.redisService.get<JobPosting[]>(cacheKey);
+  }
+
+  async setSearchJobs(cacheKey: string, jobs: JobPosting[]): Promise<void> {
+    await this.redisService.set(cacheKey, jobs, JOBS_CACHE_TTL);
+  }
+
   async getCompanyJobs(company: CompanyType): Promise<JobPosting[] | null> {
     return this.redisService.get<JobPosting[]>(
       `${REDIS_KEYS.JOBS_COMPANY}${company}`,
@@ -25,5 +37,13 @@ export class RedisJobPostingCacheRepository
       jobs,
       JOBS_CACHE_TTL,
     );
+  }
+
+  async setAllJobs(jobs: JobPosting[]): Promise<void> {
+    await this.redisService.set(REDIS_KEYS.JOBS_ALL, jobs, JOBS_CACHE_TTL);
+  }
+
+  async setLastUpdate(timestamp: string): Promise<void> {
+    await this.redisService.set(REDIS_KEYS.JOBS_LAST_UPDATE, timestamp);
   }
 }

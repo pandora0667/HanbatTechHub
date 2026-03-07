@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { GetJobsQueryDto } from '../../dto/requests/get-jobs-query.dto';
-import { CompanyType, JobPosting } from '../../interfaces/job-posting.interface';
+import { JobPosting } from '../../interfaces/job-posting.interface';
 import {
   JOB_POSTING_CACHE_REPOSITORY,
   JobPostingCacheRepository,
@@ -16,26 +16,25 @@ import { PaginatedResult } from '../../domain/types/paginated-result.type';
 import { JobPostingCollectorService } from '../services/job-posting-collector.service';
 
 @Injectable()
-export class GetCompanyJobsUseCase {
-  private readonly logger = new Logger(GetCompanyJobsUseCase.name);
+export class GetTechJobsUseCase {
+  private readonly logger = new Logger(GetTechJobsUseCase.name);
 
   constructor(
     @Inject(JOB_POSTING_CACHE_REPOSITORY)
     private readonly jobPostingCacheRepository: JobPostingCacheRepository,
-    private readonly jobPostingCollectorService: JobPostingCollectorService,
     private readonly jobPostingSearchService: JobPostingSearchService,
+    private readonly jobPostingCollectorService: JobPostingCollectorService,
   ) {}
 
-  async execute(
-    company: CompanyType,
-    query: GetJobsQueryDto,
-  ): Promise<PaginatedResult<JobPosting>> {
+  async execute(query: GetJobsQueryDto): Promise<PaginatedResult<JobPosting>> {
     try {
+      const cacheKey = this.jobPostingSearchService.buildTechJobsCacheKey(query);
       const cachedJobs =
-        await this.jobPostingCacheRepository.getCompanyJobs(company);
+        await this.jobPostingCacheRepository.getSearchJobs(cacheKey);
+
       const jobs =
         cachedJobs ??
-        (await this.fetchAndCacheCompanyJobs(company));
+        (await this.fetchAndCacheJobs(cacheKey, query));
 
       const filteredJobs = this.jobPostingSearchService.filter(jobs, query);
       return this.jobPostingSearchService.paginate(filteredJobs, query);
@@ -46,21 +45,21 @@ export class GetCompanyJobsUseCase {
 
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to fetch ${company} tech jobs: ${errorMessage}`,
-      );
-      throw new InternalServerErrorException(
-        `Failed to fetch ${company} job postings`,
-      );
+      this.logger.error(`Failed to fetch tech jobs: ${errorMessage}`);
+      throw new InternalServerErrorException('Failed to fetch job postings');
     }
   }
 
-  private async fetchAndCacheCompanyJobs(
-    company: CompanyType,
+  private async fetchAndCacheJobs(
+    cacheKey: string,
+    query: GetJobsQueryDto,
   ): Promise<JobPosting[]> {
-    const jobs = await this.jobPostingCollectorService.fetchCompanyJobs(company);
+    const jobs = await this.jobPostingCollectorService.fetchAllJobs({
+      company: query.company,
+      continueOnError: !query.company,
+    });
 
-    await this.jobPostingCacheRepository.setCompanyJobs(company, jobs);
+    await this.jobPostingCacheRepository.setSearchJobs(cacheKey, jobs);
     return jobs;
   }
 }
