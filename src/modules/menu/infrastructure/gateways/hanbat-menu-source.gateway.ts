@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { MenuSourceGateway } from '../../application/ports/menu-source.gateway';
+import { HanbatMenuSourceRow } from '../models/hanbat-menu-source.model';
 
 @Injectable()
 export class HanbatMenuSourceGateway implements MenuSourceGateway {
@@ -10,9 +11,11 @@ export class HanbatMenuSourceGateway implements MenuSourceGateway {
   private readonly ajaxUrl =
     'https://www.hanbat.ac.kr/prog/carteGuidance/kor/sub06_030301/C1/getCalendar.do';
 
-  async fetchMenuData(mondayDate: string): Promise<any[]> {
+  async fetchMenuData(mondayDate: string): Promise<HanbatMenuSourceRow[]> {
     try {
-      this.logger.log(`AJAX 엔드포인트에서 메뉴 데이터 요청: bgnde=${mondayDate}`);
+      this.logger.log(
+        `AJAX 엔드포인트에서 메뉴 데이터 요청: bgnde=${mondayDate}`,
+      );
 
       const response = await axios.post(this.ajaxUrl, `bgnde=${mondayDate}`, {
         headers: {

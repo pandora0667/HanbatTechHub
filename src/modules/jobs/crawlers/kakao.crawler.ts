@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import {
   JobPosting,
   CareerType,
@@ -13,6 +12,7 @@ import {
   EMPLOYMENT_TYPE,
   LOCATION_TYPE,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import { KakaoJobData } from '../interfaces/kakao-job.interface';
 
@@ -27,7 +27,7 @@ export class KakaoCrawler extends BaseJobCrawler {
     super(COMPANY_ENUM.KAKAO, httpClient, 'https://careers.kakao.com');
   }
 
-  async fetchJobs(_query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(_query?: JobSearchQuery): Promise<JobPosting[]> {
     this.logger.debug('Starting to fetch Kakao jobs...');
 
     try {

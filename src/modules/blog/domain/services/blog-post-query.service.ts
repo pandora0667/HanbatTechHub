@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { paginateArray } from '../../../../common/utils/pagination.util';
 import { BlogPost } from '../../interfaces/blog.interface';
 import { PaginatedBlogPosts } from '../types/paginated-blog-posts.type';
 
@@ -15,21 +16,7 @@ export class BlogPostQueryService {
     page: number = 1,
     limit: number = 10,
   ): PaginatedBlogPosts {
-    const safePage = page > 0 ? page : 1;
-    const safeLimit = limit > 0 ? limit : 1;
-    const total = posts.length;
-    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
-    const startIndex = (safePage - 1) * safeLimit;
-
-    return {
-      items: posts.slice(startIndex, startIndex + safeLimit),
-      meta: {
-        totalCount: total,
-        currentPage: safePage,
-        totalPages,
-        hasNextPage: safePage < totalPages,
-        hasPreviousPage: safePage > 1,
-      },
-    };
+    const { items, meta } = paginateArray(posts, page, limit, 1);
+    return { items, meta };
   }
 }

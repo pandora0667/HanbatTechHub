@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import { JobPosting } from '../interfaces/job-posting.interface';
 import {
   COMPANY_ENUM,
@@ -10,6 +9,7 @@ import {
   LOCATION_TYPE,
   COUPANG_DEPARTMENTS,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as cheerio from 'cheerio';
 import * as puppeteer from 'puppeteer';
@@ -27,7 +27,7 @@ export class CoupangCrawler extends BaseJobCrawler {
     super(COMPANY_ENUM.COUPANG, httpClient, 'https://www.coupang.jobs/kr/jobs');
   }
 
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]> {
     let browser: puppeteer.Browser | null = null;
     let page: Page | null = null;
 
@@ -55,9 +55,7 @@ export class CoupangCrawler extends BaseJobCrawler {
       await page.setRequestInterception(true);
       page.on('request', (request) => {
         const resourceType = request.resourceType();
-        if (
-          ['image', 'media', 'font', 'stylesheet'].includes(resourceType)
-        ) {
+        if (['image', 'media', 'font', 'stylesheet'].includes(resourceType)) {
           void request.abort();
           return;
         }
@@ -94,7 +92,7 @@ export class CoupangCrawler extends BaseJobCrawler {
     }
   }
 
-  private buildUrl(query?: GetJobsQueryDto): string {
+  private buildUrl(query?: JobSearchQuery): string {
     const params = new URLSearchParams({
       location: 'Seoul, South Korea',
       pagesize: '20',

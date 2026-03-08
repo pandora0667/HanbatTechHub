@@ -13,6 +13,8 @@ export class BlogSourceCatalogService implements BlogSourceCatalog {
     code,
     name: source.name,
     url: source.url,
+    headers: source.headers,
+    requestOptions: source.requestOptions,
   }));
 
   get(code: string): BlogSourceDefinition | undefined {

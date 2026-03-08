@@ -4,7 +4,7 @@ import {
   NoticeCacheRepository,
 } from '../ports/notice-cache.repository';
 import { NoticeCollectorService } from '../services/notice-collector.service';
-import { NoticeListResponseDto } from '../../dto/notice.dto';
+import { PaginatedNotices } from '../../domain/types/paginated-notices.type';
 import { NoticePaginationService } from '../../domain/services/notice-pagination.service';
 
 @Injectable()
@@ -16,7 +16,10 @@ export class GetNoticesUseCase {
     private readonly noticePaginationService: NoticePaginationService,
   ) {}
 
-  async execute(page: number = 1, limit: number = 10): Promise<NoticeListResponseDto> {
+  async execute(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedNotices> {
     let notices = await this.noticeCacheRepository.getRegularNotices();
 
     if (notices.length === 0) {

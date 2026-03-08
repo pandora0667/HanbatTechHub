@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { GetJobsQueryDto } from '../../dto/requests/get-jobs-query.dto';
+import { createOffsetPaginationWindow } from '../../../../common/utils/pagination.util';
+import { joinRedisKeySegments } from '../../../../common/utils/redis-key.util';
 import { REDIS_KEYS } from '../../constants/redis.constant';
 import { JobPosting } from '../../interfaces/job-posting.interface';
+import { JobSearchQuery } from '../types/job-search-query.type';
 import { PaginatedResult } from '../types/paginated-result.type';
 
 @Injectable()
 export class JobPostingSearchService {
-  filter(jobs: JobPosting[], query: GetJobsQueryDto): JobPosting[] {
+  filter(jobs: JobPosting[], query: JobSearchQuery): JobPosting[] {
     let filteredJobs = jobs;
 
     if (query.department) {
@@ -61,27 +63,27 @@ export class JobPostingSearchService {
 
   paginate(
     jobs: JobPosting[],
-    query: GetJobsQueryDto,
+    query: JobSearchQuery,
   ): PaginatedResult<JobPosting> {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const safePage = page > 0 ? page : 1;
-    const safeLimit = limit > 0 ? limit : 10;
-    const start = (safePage - 1) * safeLimit;
-    const end = start + safeLimit;
+    const window = createOffsetPaginationWindow(
+      jobs.length,
+      query.page || 1,
+      query.limit || 10,
+      10,
+    );
 
     return {
-      data: jobs.slice(start, end),
+      data: jobs.slice(window.startIndex, window.startIndex + window.limit),
       meta: {
         total: jobs.length,
-        page: safePage,
-        limit: safeLimit,
-        totalPages: jobs.length === 0 ? 0 : Math.ceil(jobs.length / safeLimit),
+        page: window.currentPage,
+        limit: window.limit,
+        totalPages: window.totalPages,
       },
     };
   }
 
-  buildTechJobsCacheKey(query: GetJobsQueryDto): string {
+  buildTechJobsCacheKey(query: JobSearchQuery): string {
     if (!query || Object.keys(query).length === 0) {
       return REDIS_KEYS.JOBS_ALL;
     }
@@ -120,6 +122,6 @@ export class JobPostingSearchService {
       return REDIS_KEYS.JOBS_ALL;
     }
 
-    return parts.join(':');
+    return joinRedisKeySegments(...parts);
   }
 }

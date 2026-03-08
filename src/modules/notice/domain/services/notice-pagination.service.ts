@@ -1,38 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { OffsetPaginationMeta } from '../../../../common/types/offset-pagination.types';
 import {
-  NoticeItemDto,
-  NoticeListResponseDto,
-  PaginationMetaDto,
-} from '../../dto/notice.dto';
+  createOffsetPaginationWindow,
+  paginateArray,
+  toOffsetPaginationMeta,
+} from '../../../../common/utils/pagination.util';
+import { NoticeSummary } from '../models/notice.model';
+import { PaginatedNotices } from '../types/paginated-notices.type';
 
 @Injectable()
 export class NoticePaginationService {
   paginate(
-    notices: NoticeItemDto[],
+    notices: NoticeSummary[],
     page: number = 1,
     limit: number = 10,
-  ): NoticeListResponseDto {
-    const safePage = page > 0 ? page : 1;
-    const safeLimit = limit > 0 ? limit : 1;
-    const startIndex = (safePage - 1) * safeLimit;
-    const total = notices.length;
-
-    return {
-      items: notices.slice(startIndex, startIndex + safeLimit),
-      meta: this.createMeta(total, safePage, safeLimit),
-    };
+  ): PaginatedNotices {
+    const { items, meta } = paginateArray(notices, page, limit, 1);
+    return { items, meta };
   }
 
-  createMeta(total: number, page: number, limit: number): PaginationMetaDto {
-    const safeLimit = limit > 0 ? limit : 1;
-    const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
-
-    return {
-      totalCount: total,
-      currentPage: page,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    };
+  createMeta(total: number, page: number, limit: number): OffsetPaginationMeta {
+    return toOffsetPaginationMeta(
+      createOffsetPaginationWindow(total, page, limit, 1),
+    );
   }
 }

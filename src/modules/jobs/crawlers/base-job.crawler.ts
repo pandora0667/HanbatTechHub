@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { CompanyType, JobPosting } from '../interfaces/job-posting.interface';
 import { IJobCrawler } from '../interfaces/job-crawler.interface';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import { CAREER_TYPE, EMPLOYMENT_TYPE } from '../constants/job-codes.constant';
 
@@ -26,7 +26,7 @@ export abstract class BaseJobCrawler implements IJobCrawler {
    * @param query 검색 조건
    * @returns 채용 공고 목록
    */
-  abstract fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]>;
+  abstract fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]>;
 
   /**
    * 기본 JobPosting 객체 템플릿 생성
@@ -90,9 +90,10 @@ export abstract class BaseJobCrawler implements IJobCrawler {
    * @param message 에러 메시지
    * @param error 에러 객체
    */
-  protected handleError(message: string, error: any): void {
-    this.logger.error(`${message}: ${error.message || error}`);
-    if (error.stack) {
+  protected handleError(message: string, error: unknown): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    this.logger.error(`${message}: ${errorMessage}`);
+    if (error instanceof Error && error.stack) {
       this.logger.debug(error.stack);
     }
   }

@@ -8,7 +8,7 @@ import {
   NoticeSourceGateway,
 } from '../ports/notice-source.gateway';
 import { NoticeHtmlParserService } from '../../infrastructure/services/notice-html-parser.service';
-import { NoticeDetailResponseDto } from '../../dto/notice.dto';
+import { NoticeDetail } from '../../domain/models/notice.model';
 
 @Injectable()
 export class GetNoticeDetailUseCase {
@@ -20,8 +20,9 @@ export class GetNoticeDetailUseCase {
     private readonly noticeHtmlParserService: NoticeHtmlParserService,
   ) {}
 
-  async execute(nttId: string): Promise<NoticeDetailResponseDto> {
-    const cachedDetail = await this.noticeCacheRepository.getNoticeDetail(nttId);
+  async execute(nttId: string): Promise<NoticeDetail> {
+    const cachedDetail =
+      await this.noticeCacheRepository.getNoticeDetail(nttId);
 
     if (cachedDetail) {
       return cachedDetail;

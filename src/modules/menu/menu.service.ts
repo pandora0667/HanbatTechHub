@@ -1,14 +1,13 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { MenuResponseDto } from './dto/menu.dto';
-import {
-  MENU_UPDATE_CRON,
-} from './constants/menu.constant';
+import { MENU_UPDATE_CRON } from './constants/menu.constant';
 import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 import { GetMenuByDateUseCase } from './application/use-cases/get-menu-by-date.use-case';
 import { GetWeeklyMenuUseCase } from './application/use-cases/get-weekly-menu.use-case';
 import { InitializeMenuCacheUseCase } from './application/use-cases/initialize-menu-cache.use-case';
 import { UpdateMenuCacheUseCase } from './application/use-cases/update-menu-cache.use-case';
+import { MenuResponseMapper } from './presentation/mappers/menu-response.mapper';
 
 @Injectable()
 export class MenuService implements OnModuleInit {
@@ -20,6 +19,7 @@ export class MenuService implements OnModuleInit {
     private readonly getWeeklyMenuUseCase: GetWeeklyMenuUseCase,
     private readonly initializeMenuCacheUseCase: InitializeMenuCacheUseCase,
     private readonly updateMenuCacheUseCase: UpdateMenuCacheUseCase,
+    private readonly menuResponseMapper: MenuResponseMapper,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -40,7 +40,9 @@ export class MenuService implements OnModuleInit {
     }
 
     if (this.isUpdating) {
-      this.logger.warn('메뉴 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
+      this.logger.warn(
+        '메뉴 데이터 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.',
+      );
       return;
     }
 
@@ -65,7 +67,8 @@ export class MenuService implements OnModuleInit {
    * @param date YYYY-MM-DD 형식의 날짜 문자열, 지정하지 않으면 오늘 날짜
    */
   async getMenuByDate(date?: string): Promise<MenuResponseDto> {
-    return this.getMenuByDateUseCase.execute(date);
+    const menu = await this.getMenuByDateUseCase.execute(date);
+    return this.menuResponseMapper.toResponse(menu);
   }
 
   /**
@@ -73,6 +76,7 @@ export class MenuService implements OnModuleInit {
    * @param startDate 시작 날짜, 지정하지 않으면 오늘 날짜
    */
   async getWeeklyMenu(startDate?: string): Promise<MenuResponseDto[]> {
-    return this.getWeeklyMenuUseCase.execute(startDate);
+    const menus = await this.getWeeklyMenuUseCase.execute(startDate);
+    return this.menuResponseMapper.toResponseList(menus);
   }
 }

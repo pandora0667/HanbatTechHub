@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MenuCalendarService } from './menu-calendar.service';
-import { MenuItemDto, MenuResponseDto } from '../../dto/menu.dto';
+import { DailyMenu, MealMenuItem } from '../models/menu.model';
+import { HanbatMenuSourceRow } from '../../infrastructure/models/hanbat-menu-source.model';
 
 @Injectable()
 export class MenuResponseFactoryService {
@@ -8,7 +9,10 @@ export class MenuResponseFactoryService {
 
   constructor(private readonly menuCalendarService: MenuCalendarService) {}
 
-  buildMenuForDate(menuData: any[], targetDate: Date): MenuResponseDto {
+  buildMenuForDate(
+    menuData: HanbatMenuSourceRow[],
+    targetDate: Date,
+  ): DailyMenu {
     const formattedDate = this.menuCalendarService.formatDate(targetDate);
     const dayIndex = this.menuCalendarService.getDayIndex(targetDate);
     const menuItems = this.extractMenuItemsFromData(
@@ -20,8 +24,11 @@ export class MenuResponseFactoryService {
     return this.formatMenuResponse(menuItems, formattedDate);
   }
 
-  buildWeeklyMenus(menuData: any[], mondayDate: Date): MenuResponseDto[] {
-    const weekMenus: MenuResponseDto[] = [];
+  buildWeeklyMenus(
+    menuData: HanbatMenuSourceRow[],
+    mondayDate: Date,
+  ): DailyMenu[] {
+    const weekMenus: DailyMenu[] = [];
 
     for (let i = 0; i < 5; i++) {
       const targetDate = new Date(mondayDate);
@@ -52,11 +59,11 @@ export class MenuResponseFactoryService {
   }
 
   private extractMenuItemsFromData(
-    menuData: any[],
+    menuData: HanbatMenuSourceRow[],
     date: string,
     dayIndex: number,
-  ): MenuItemDto[] {
-    const menuItems: MenuItemDto[] = [];
+  ): MealMenuItem[] {
+    const menuItems: MealMenuItem[] = [];
 
     if (!menuData || menuData.length === 0 || dayIndex < 0 || dayIndex > 4) {
       this.logger.warn(`${date} 날짜의 메뉴 데이터가 없거나 주말입니다.`);
@@ -122,9 +129,9 @@ export class MenuResponseFactoryService {
   }
 
   private formatMenuResponse(
-    menuItems: MenuItemDto[],
+    menuItems: MealMenuItem[],
     date: string,
-  ): MenuResponseDto {
+  ): DailyMenu {
     const lunchMenu =
       menuItems.find((item) => item.meal === 'lunch')?.menu || [];
     const dinnerMenu =

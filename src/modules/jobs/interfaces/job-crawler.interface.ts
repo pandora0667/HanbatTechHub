@@ -1,13 +1,5 @@
 import { CompanyType, JobPosting } from './job-posting.interface';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
-
-export interface JobFilter {
-  department?: string;
-  field?: string;
-  career?: string;
-  employmentType?: string;
-  location?: string;
-}
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 
 export interface IJobCrawler {
   /**
@@ -30,7 +22,7 @@ export interface IJobCrawler {
    * @param query - 필터링 조건
    * @returns Promise<JobPosting[]> - 채용 공고 목록
    */
-  fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]>;
+  fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]>;
 
   /**
    * 상세 페이지 URL을 생성합니다. (선택 사항)
@@ -51,5 +43,5 @@ export interface IJobCrawler {
    * @param rawData - 원본 데이터
    * @returns JobPosting - 표준화된 채용 공고
    */
-  parseJobData?(rawData: any): JobPosting;
+  parseJobData?(rawData: unknown): JobPosting;
 }

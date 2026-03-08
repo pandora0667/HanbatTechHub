@@ -1,30 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '../../../redis/redis.service';
+import { appendRedisKey } from '../../../../common/utils/redis-key.util';
 import {
   NOTICE_CACHE_TTL,
   NOTICE_DETAIL_CACHE_TTL,
   REDIS_KEYS,
 } from '../../constants/notice.constant';
 import {
-  NoticeDetailResponseDto,
-  NoticeItemDto,
-} from '../../dto/notice.dto';
-import {
   NoticeCacheRepository,
   NoticeGroupType,
 } from '../../application/ports/notice-cache.repository';
+import { NoticeDetail, NoticeSummary } from '../../domain/models/notice.model';
 
 @Injectable()
 export class RedisNoticeCacheRepository implements NoticeCacheRepository {
   constructor(private readonly redisService: RedisService) {}
 
-  async getRegularNotices(): Promise<NoticeItemDto[]> {
+  async getRegularNotices(): Promise<NoticeSummary[]> {
     return (
-      (await this.redisService.get<NoticeItemDto[]>(REDIS_KEYS.NOTICE_LIST)) || []
+      (await this.redisService.get<NoticeSummary[]>(REDIS_KEYS.NOTICE_LIST)) ||
+      []
     );
   }
 
-  async saveRegularNotices(notices: NoticeItemDto[]): Promise<void> {
+  async saveRegularNotices(notices: NoticeSummary[]): Promise<void> {
     await this.redisService.set(
       REDIS_KEYS.NOTICE_LIST,
       notices,
@@ -32,13 +31,15 @@ export class RedisNoticeCacheRepository implements NoticeCacheRepository {
     );
   }
 
-  async getNoticeGroup(group: NoticeGroupType): Promise<NoticeItemDto[] | null> {
-    return this.redisService.get<NoticeItemDto[]>(this.getGroupKey(group));
+  async getNoticeGroup(
+    group: NoticeGroupType,
+  ): Promise<NoticeSummary[] | null> {
+    return this.redisService.get<NoticeSummary[]>(this.getGroupKey(group));
   }
 
   async saveNoticeGroup(
     group: NoticeGroupType,
-    notices: NoticeItemDto[],
+    notices: NoticeSummary[],
   ): Promise<void> {
     await this.redisService.set(
       this.getGroupKey(group),
@@ -47,20 +48,15 @@ export class RedisNoticeCacheRepository implements NoticeCacheRepository {
     );
   }
 
-  async getNoticeDetail(
-    nttId: string,
-  ): Promise<NoticeDetailResponseDto | null> {
-    return this.redisService.get<NoticeDetailResponseDto>(
-      `${REDIS_KEYS.NOTICE_DETAIL}${nttId}`,
+  async getNoticeDetail(nttId: string): Promise<NoticeDetail | null> {
+    return this.redisService.get<NoticeDetail>(
+      appendRedisKey(REDIS_KEYS.NOTICE_DETAIL, nttId),
     );
   }
 
-  async saveNoticeDetail(
-    nttId: string,
-    detail: NoticeDetailResponseDto,
-  ): Promise<void> {
+  async saveNoticeDetail(nttId: string, detail: NoticeDetail): Promise<void> {
     await this.redisService.set(
-      `${REDIS_KEYS.NOTICE_DETAIL}${nttId}`,
+      appendRedisKey(REDIS_KEYS.NOTICE_DETAIL, nttId),
       detail,
       NOTICE_DETAIL_CACHE_TTL,
     );

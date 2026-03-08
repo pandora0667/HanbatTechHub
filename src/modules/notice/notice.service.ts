@@ -4,15 +4,14 @@ import {
   NoticeListResponseDto,
   NoticeDetailResponseDto,
 } from './dto/notice.dto';
-import {
-  NOTICE_UPDATE_CRON,
-} from './constants/notice.constant';
+import { NOTICE_UPDATE_CRON } from './constants/notice.constant';
 import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 import { GetNoticesUseCase } from './application/use-cases/get-notices.use-case';
 import { GetNoticeGroupUseCase } from './application/use-cases/get-notice-group.use-case';
 import { GetNoticeDetailUseCase } from './application/use-cases/get-notice-detail.use-case';
 import { InitializeNoticeCacheUseCase } from './application/use-cases/initialize-notice-cache.use-case';
 import { UpdateNoticeCacheUseCase } from './application/use-cases/update-notice-cache.use-case';
+import { NoticeResponseMapper } from './presentation/mappers/notice-response.mapper';
 
 @Injectable()
 export class NoticeService implements OnModuleInit {
@@ -25,6 +24,7 @@ export class NoticeService implements OnModuleInit {
     private readonly getNoticeDetailUseCase: GetNoticeDetailUseCase,
     private readonly initializeNoticeCacheUseCase: InitializeNoticeCacheUseCase,
     private readonly updateNoticeCacheUseCase: UpdateNoticeCacheUseCase,
+    private readonly noticeResponseMapper: NoticeResponseMapper,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -68,22 +68,27 @@ export class NoticeService implements OnModuleInit {
   }
 
   async getNotices(page = 1, limit = 10): Promise<NoticeListResponseDto> {
-    return this.getNoticesUseCase.execute(page, limit);
+    const notices = await this.getNoticesUseCase.execute(page, limit);
+    return this.noticeResponseMapper.toListResponse(notices);
   }
 
   async getNewNotices(): Promise<NoticeListResponseDto> {
-    return this.getNoticeGroupUseCase.execute('new');
+    const notices = await this.getNoticeGroupUseCase.execute('new');
+    return this.noticeResponseMapper.toListResponse(notices);
   }
 
   async getFeaturedNotices(): Promise<NoticeListResponseDto> {
-    return this.getNoticeGroupUseCase.execute('featured');
+    const notices = await this.getNoticeGroupUseCase.execute('featured');
+    return this.noticeResponseMapper.toListResponse(notices);
   }
 
   async getTodayNotices(): Promise<NoticeListResponseDto> {
-    return this.getNoticeGroupUseCase.execute('today');
+    const notices = await this.getNoticeGroupUseCase.execute('today');
+    return this.noticeResponseMapper.toListResponse(notices);
   }
 
   async getNoticeDetail(nttId: string): Promise<NoticeDetailResponseDto> {
-    return this.getNoticeDetailUseCase.execute(nttId);
+    const detail = await this.getNoticeDetailUseCase.execute(nttId);
+    return this.noticeResponseMapper.toDetailResponse(detail);
   }
 }

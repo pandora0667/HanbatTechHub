@@ -9,7 +9,7 @@ import {
 } from '../ports/notice-source.gateway';
 import { NoticeHtmlParserService } from '../../infrastructure/services/notice-html-parser.service';
 import { NoticeGroupingService } from '../../domain/services/notice-grouping.service';
-import { NoticeItemDto } from '../../dto/notice.dto';
+import { NoticeGroups } from '../../domain/models/notice.model';
 
 @Injectable()
 export class NoticeCollectorService {
@@ -22,12 +22,7 @@ export class NoticeCollectorService {
     private readonly noticeGroupingService: NoticeGroupingService,
   ) {}
 
-  async collect(): Promise<{
-    regular: NoticeItemDto[];
-    featured: NoticeItemDto[];
-    new: NoticeItemDto[];
-    today: NoticeItemDto[];
-  }> {
+  async collect(): Promise<NoticeGroups> {
     const html = await this.noticeSourceGateway.fetchNoticeListHtml();
     const notices = this.noticeHtmlParserService.parseList(html);
     const grouped = this.noticeGroupingService.classify(notices);

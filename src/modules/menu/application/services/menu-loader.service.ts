@@ -5,7 +5,7 @@ import {
   MENU_SOURCE_GATEWAY,
   MenuSourceGateway,
 } from '../ports/menu-source.gateway';
-import { MenuResponseDto } from '../../dto/menu.dto';
+import { DailyMenu } from '../../domain/models/menu.model';
 
 @Injectable()
 export class MenuLoaderService {
@@ -18,29 +18,37 @@ export class MenuLoaderService {
 
   async loadMenuByDate(
     date?: string,
-  ): Promise<{ date: string; menu: MenuResponseDto }> {
+  ): Promise<{ date: string; menu: DailyMenu }> {
     const targetDate = date ? new Date(date) : new Date();
     const mondayDate = this.menuCalendarService.getMondayDate(targetDate);
     const formattedMondayDate = this.menuCalendarService.formatDate(mondayDate);
-    const menuData = await this.menuSourceGateway.fetchMenuData(formattedMondayDate);
+    const menuData =
+      await this.menuSourceGateway.fetchMenuData(formattedMondayDate);
 
     return {
       date: this.menuCalendarService.formatDate(targetDate),
-      menu: this.menuResponseFactoryService.buildMenuForDate(menuData, targetDate),
+      menu: this.menuResponseFactoryService.buildMenuForDate(
+        menuData,
+        targetDate,
+      ),
     };
   }
 
   async loadWeeklyMenu(
     startDate?: string,
-  ): Promise<{ mondayDate: string; menus: MenuResponseDto[] }> {
+  ): Promise<{ mondayDate: string; menus: DailyMenu[] }> {
     const startDay = startDate ? new Date(startDate) : new Date();
     const mondayDate = this.menuCalendarService.getMondayDate(startDay);
     const formattedMondayDate = this.menuCalendarService.formatDate(mondayDate);
-    const menuData = await this.menuSourceGateway.fetchMenuData(formattedMondayDate);
+    const menuData =
+      await this.menuSourceGateway.fetchMenuData(formattedMondayDate);
 
     return {
       mondayDate: formattedMondayDate,
-      menus: this.menuResponseFactoryService.buildWeeklyMenus(menuData, mondayDate),
+      menus: this.menuResponseFactoryService.buildWeeklyMenus(
+        menuData,
+        mondayDate,
+      ),
     };
   }
 }

@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import {
   JobPosting,
   LocationType,
@@ -13,6 +12,7 @@ import {
   EMPLOYMENT_TYPE,
   LOCATION_TYPE,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 
 interface LinePageDataResponse {
@@ -77,7 +77,7 @@ export class LineCrawler extends BaseJobCrawler {
     );
   }
 
-  async fetchJobs(_query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(_query?: JobSearchQuery): Promise<JobPosting[]> {
     this.logger.debug('Starting to fetch LINE jobs...');
 
     try {
@@ -180,8 +180,9 @@ export class LineCrawler extends BaseJobCrawler {
     const startDate = job.start_date ? new Date(job.start_date) : new Date();
     const endDate = this.parseEndDate(job);
     const department =
-      departments.find((name) => name.includes(LineCrawler.TARGET_DEPARTMENT)) ??
-      departments.join(', ');
+      departments.find((name) =>
+        name.includes(LineCrawler.TARGET_DEPARTMENT),
+      ) ?? departments.join(', ');
     const field = fields.join(', ') || department;
 
     const jobTemplate = this.createJobPostingTemplate();

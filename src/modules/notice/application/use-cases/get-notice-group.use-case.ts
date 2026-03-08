@@ -5,7 +5,7 @@ import {
   NoticeGroupType,
 } from '../ports/notice-cache.repository';
 import { NoticeCollectorService } from '../services/notice-collector.service';
-import { NoticeListResponseDto } from '../../dto/notice.dto';
+import { PaginatedNotices } from '../../domain/types/paginated-notices.type';
 import { NoticePaginationService } from '../../domain/services/notice-pagination.service';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class GetNoticeGroupUseCase {
     private readonly noticePaginationService: NoticePaginationService,
   ) {}
 
-  async execute(group: NoticeGroupType): Promise<NoticeListResponseDto> {
+  async execute(group: NoticeGroupType): Promise<PaginatedNotices> {
     let notices = await this.noticeCacheRepository.getNoticeGroup(group);
 
     if (!notices) {
@@ -29,7 +29,7 @@ export class GetNoticeGroupUseCase {
       meta: this.noticePaginationService.createMeta(
         notices.length,
         1,
-        notices.length,
+        notices.length === 0 ? 1 : notices.length,
       ),
     };
   }

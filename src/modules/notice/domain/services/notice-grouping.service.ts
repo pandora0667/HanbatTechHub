@@ -1,14 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { NoticeItemDto } from '../../dto/notice.dto';
+import { isToday } from '../../../../common/utils/date.utils';
+import { NoticeGroups, NoticeSummary } from '../models/notice.model';
 
 @Injectable()
 export class NoticeGroupingService {
-  classify(notices: NoticeItemDto[]): {
-    regular: NoticeItemDto[];
-    featured: NoticeItemDto[];
-    new: NoticeItemDto[];
-    today: NoticeItemDto[];
-  } {
+  classify(notices: NoticeSummary[]): NoticeGroups {
     return {
       regular: notices.filter((notice) => notice.no !== '공지'),
       featured: notices.filter((notice) => notice.no === '공지'),
@@ -17,15 +13,9 @@ export class NoticeGroupingService {
     };
   }
 
-  private filterTodayNotices(notices: NoticeItemDto[]): NoticeItemDto[] {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayString = `${year}-${month}-${day}`;
-
+  private filterTodayNotices(notices: NoticeSummary[]): NoticeSummary[] {
     return notices.filter(
-      (notice) => notice.date === todayString && notice.no !== '공지',
+      (notice) => isToday(notice.date) && notice.no !== '공지',
     );
   }
 }

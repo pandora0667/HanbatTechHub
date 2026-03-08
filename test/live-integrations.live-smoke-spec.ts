@@ -14,6 +14,7 @@ import { RedisMenuRepository } from '../src/modules/menu/infrastructure/persiste
 import { HanbatMenuSourceGateway } from '../src/modules/menu/infrastructure/gateways/hanbat-menu-source.gateway';
 import { MENU_CACHE_REPOSITORY } from '../src/modules/menu/application/ports/menu-cache.repository';
 import { MENU_SOURCE_GATEWAY } from '../src/modules/menu/application/ports/menu-source.gateway';
+import { MenuResponseMapper } from '../src/modules/menu/presentation/mappers/menu-response.mapper';
 import { NoticeService } from '../src/modules/notice/notice.service';
 import { NoticeGroupingService } from '../src/modules/notice/domain/services/notice-grouping.service';
 import { NoticePaginationService } from '../src/modules/notice/domain/services/notice-pagination.service';
@@ -28,6 +29,7 @@ import { HanbatNoticeSourceGateway } from '../src/modules/notice/infrastructure/
 import { NoticeHtmlParserService } from '../src/modules/notice/infrastructure/services/notice-html-parser.service';
 import { NOTICE_CACHE_REPOSITORY } from '../src/modules/notice/application/ports/notice-cache.repository';
 import { NOTICE_SOURCE_GATEWAY } from '../src/modules/notice/application/ports/notice-source.gateway';
+import { NoticeResponseMapper } from '../src/modules/notice/presentation/mappers/notice-response.mapper';
 import { BlogService } from '../src/modules/blog/blog.service';
 import { BlogPostQueryService } from '../src/modules/blog/domain/services/blog-post-query.service';
 import { BlogFeedCollectorService } from '../src/modules/blog/application/services/blog-feed-collector.service';
@@ -42,6 +44,7 @@ import { BlogSourceCatalogService } from '../src/modules/blog/infrastructure/ser
 import { RssBlogFeedReaderService } from '../src/modules/blog/infrastructure/services/rss-blog-feed-reader.service';
 import { BLOG_POST_REPOSITORY } from '../src/modules/blog/application/ports/blog-post.repository';
 import { BLOG_SOURCE_CATALOG } from '../src/modules/blog/application/ports/blog-source-catalog';
+import { BlogResponseMapper } from '../src/modules/blog/presentation/mappers/blog-response.mapper';
 import { TranslationService } from '../src/modules/translation/services/translation.service';
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpClientUtil } from '../src/modules/jobs/utils/http-client.util';
@@ -87,7 +90,9 @@ class InMemoryRedisService {
   }
 
   async initializeServiceCache(serviceName: string): Promise<void> {
-    const pattern = serviceName.endsWith(':*') ? serviceName : `${serviceName}:*`;
+    const pattern = serviceName.endsWith(':*')
+      ? serviceName
+      : `${serviceName}:*`;
     await this.flushByPattern(pattern);
   }
 }
@@ -123,6 +128,7 @@ describeLive('Live Integration Smoke', () => {
         GetWeeklyMenuUseCase,
         UpdateMenuCacheUseCase,
         InitializeMenuCacheUseCase,
+        MenuResponseMapper,
         RedisMenuRepository,
         HanbatMenuSourceGateway,
         {
@@ -145,6 +151,7 @@ describeLive('Live Integration Smoke', () => {
         RedisNoticeCacheRepository,
         HanbatNoticeSourceGateway,
         NoticeHtmlParserService,
+        NoticeResponseMapper,
         {
           provide: NOTICE_CACHE_REPOSITORY,
           useExisting: RedisNoticeCacheRepository,
@@ -165,6 +172,7 @@ describeLive('Live Integration Smoke', () => {
         RedisBlogPostRepository,
         BlogSourceCatalogService,
         RssBlogFeedReaderService,
+        BlogResponseMapper,
         {
           provide: BLOG_POST_REPOSITORY,
           useExisting: RedisBlogPostRepository,

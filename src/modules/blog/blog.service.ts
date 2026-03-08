@@ -1,12 +1,6 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import {
-  UPDATE_INTERVAL,
-} from './constants/blog.constant';
+import { UPDATE_INTERVAL } from './constants/blog.constant';
 import {
   BlogResponseDto,
   CompanyListResponseDto,
@@ -17,6 +11,7 @@ import { GetBlogCompaniesUseCase } from './application/use-cases/get-blog-compan
 import { GetCompanyBlogPostsUseCase } from './application/use-cases/get-company-blog-posts.use-case';
 import { InitializeBlogFeedsUseCase } from './application/use-cases/initialize-blog-feeds.use-case';
 import { UpdateBlogFeedsUseCase } from './application/use-cases/update-blog-feeds.use-case';
+import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper';
 
 @Injectable()
 export class BlogService implements OnModuleInit {
@@ -29,6 +24,7 @@ export class BlogService implements OnModuleInit {
     private readonly getCompanyBlogPostsUseCase: GetCompanyBlogPostsUseCase,
     private readonly initializeBlogFeedsUseCase: InitializeBlogFeedsUseCase,
     private readonly updateBlogFeedsUseCase: UpdateBlogFeedsUseCase,
+    private readonly blogResponseMapper: BlogResponseMapper,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -49,7 +45,9 @@ export class BlogService implements OnModuleInit {
     }
 
     if (this.isUpdating) {
-      this.logger.warn('블로그 피드 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.');
+      this.logger.warn(
+        '블로그 피드 업데이트가 이미 실행 중입니다. 이번 실행은 건너뜁니다.',
+      );
       return;
     }
 
@@ -73,11 +71,13 @@ export class BlogService implements OnModuleInit {
     page: number = 1,
     limit: number = 10,
   ): Promise<BlogResponseDto> {
-    return this.getAllBlogPostsUseCase.execute(page, limit);
+    const posts = await this.getAllBlogPostsUseCase.execute(page, limit);
+    return this.blogResponseMapper.toPostsResponse(posts);
   }
 
   async getCompanyList(): Promise<CompanyListResponseDto[]> {
-    return this.getBlogCompaniesUseCase.execute();
+    const companies = this.getBlogCompaniesUseCase.execute();
+    return this.blogResponseMapper.toCompanyList(companies);
   }
 
   async getCompanyPosts(
@@ -85,6 +85,11 @@ export class BlogService implements OnModuleInit {
     page: number = 1,
     limit: number = 10,
   ): Promise<BlogResponseDto> {
-    return this.getCompanyBlogPostsUseCase.execute(company, page, limit);
+    const posts = await this.getCompanyBlogPostsUseCase.execute(
+      company,
+      page,
+      limit,
+    );
+    return this.blogResponseMapper.toPostsResponse(posts);
   }
 }

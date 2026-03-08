@@ -5,13 +5,16 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GetJobsQueryDto } from '../../dto/requests/get-jobs-query.dto';
-import { CompanyType, JobPosting } from '../../interfaces/job-posting.interface';
+import {
+  CompanyType,
+  JobPosting,
+} from '../../interfaces/job-posting.interface';
 import {
   JOB_POSTING_CACHE_REPOSITORY,
   JobPostingCacheRepository,
 } from '../ports/job-posting-cache.repository';
 import { JobPostingSearchService } from '../../domain/services/job-posting-search.service';
+import { JobSearchQuery } from '../../domain/types/job-search-query.type';
 import { PaginatedResult } from '../../domain/types/paginated-result.type';
 import { JobPostingCollectorService } from '../services/job-posting-collector.service';
 
@@ -28,14 +31,12 @@ export class GetCompanyJobsUseCase {
 
   async execute(
     company: CompanyType,
-    query: GetJobsQueryDto,
+    query: JobSearchQuery,
   ): Promise<PaginatedResult<JobPosting>> {
     try {
       const cachedJobs =
         await this.jobPostingCacheRepository.getCompanyJobs(company);
-      const jobs =
-        cachedJobs ??
-        (await this.fetchAndCacheCompanyJobs(company));
+      const jobs = cachedJobs ?? (await this.fetchAndCacheCompanyJobs(company));
 
       const filteredJobs = this.jobPostingSearchService.filter(jobs, query);
       return this.jobPostingSearchService.paginate(filteredJobs, query);
@@ -58,7 +59,8 @@ export class GetCompanyJobsUseCase {
   private async fetchAndCacheCompanyJobs(
     company: CompanyType,
   ): Promise<JobPosting[]> {
-    const jobs = await this.jobPostingCollectorService.fetchCompanyJobs(company);
+    const jobs =
+      await this.jobPostingCollectorService.fetchCompanyJobs(company);
 
     await this.jobPostingCacheRepository.setCompanyJobs(company, jobs);
     return jobs;

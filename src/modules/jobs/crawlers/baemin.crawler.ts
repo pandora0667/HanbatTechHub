@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import { JobPosting } from '../interfaces/job-posting.interface';
 import {
   COMPANY_ENUM,
@@ -9,6 +8,7 @@ import {
   EMPLOYMENT_TYPE,
   LOCATION_TYPE,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as puppeteer from 'puppeteer';
 
@@ -23,7 +23,7 @@ export class BaeminCrawler extends BaseJobCrawler {
     super(COMPANY_ENUM.BAEMIN, httpClient, 'https://career.woowahan.com');
   }
 
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]> {
     let browser;
     try {
       this.logger.log('배민 채용 정보 가져오기 시작');
@@ -309,7 +309,7 @@ export class BaeminCrawler extends BaseJobCrawler {
     }
   }
 
-  private buildUrl(query?: GetJobsQueryDto): string {
+  private buildUrl(query?: JobSearchQuery): string {
     const params = new URLSearchParams({
       jobCodes: '',
       employmentTypeCodes: '',

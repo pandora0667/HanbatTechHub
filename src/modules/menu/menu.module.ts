@@ -13,6 +13,7 @@ import { RedisMenuRepository } from './infrastructure/persistence/redis-menu.rep
 import { HanbatMenuSourceGateway } from './infrastructure/gateways/hanbat-menu-source.gateway';
 import { MENU_CACHE_REPOSITORY } from './application/ports/menu-cache.repository';
 import { MENU_SOURCE_GATEWAY } from './application/ports/menu-source.gateway';
+import { MenuResponseMapper } from './presentation/mappers/menu-response.mapper';
 
 @Module({
   imports: [RedisModule],
@@ -26,6 +27,7 @@ import { MENU_SOURCE_GATEWAY } from './application/ports/menu-source.gateway';
     GetWeeklyMenuUseCase,
     UpdateMenuCacheUseCase,
     InitializeMenuCacheUseCase,
+    MenuResponseMapper,
     RedisMenuRepository,
     HanbatMenuSourceGateway,
     {

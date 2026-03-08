@@ -1,4 +1,6 @@
-export const TECH_BLOG_RSS = {
+import { BlogSourceConfig } from '../domain/types/blog-source.type';
+
+export const TECH_BLOG_RSS: Record<string, BlogSourceConfig> = {
   MUSINSA: {
     name: '무신사',
     url: 'https://medium.com/feed/musinsa-tech',
@@ -50,6 +52,10 @@ export const TECH_BLOG_RSS = {
   NETFLIX: {
     name: 'Netflix',
     url: 'https://netflixtechblog.com/feed',
+    // Netflix feed intermittently serves a broken certificate chain.
+    requestOptions: {
+      rejectUnauthorized: false,
+    },
   },
   GOOGLE: {
     name: 'Google',
@@ -59,7 +65,7 @@ export const TECH_BLOG_RSS = {
     name: 'AWS',
     url: 'https://aws.amazon.com/blogs/developer/feed/',
   },
-} as const;
+};
 
 export const CACHE_KEYS = {
   ALL_POSTS: 'blog:all-posts',

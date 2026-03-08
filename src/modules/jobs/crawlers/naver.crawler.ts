@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import {
   JobPosting,
   CareerType,
@@ -13,6 +12,7 @@ import {
   EMPLOYMENT_TYPE,
   NAVER_TECH_JOB_CODES,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as cheerio from 'cheerio';
 
@@ -33,7 +33,7 @@ export class NaverCrawler extends BaseJobCrawler {
     );
   }
 
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]> {
     try {
       const params = this.buildParams(query);
 
@@ -60,7 +60,7 @@ export class NaverCrawler extends BaseJobCrawler {
     return `${this.baseUrl}/rcrt/view/${jobId}`;
   }
 
-  private buildParams(query?: GetJobsQueryDto): Record<string, any> {
+  private buildParams(query?: JobSearchQuery): Record<string, any> {
     // 모든 기술 직무 코드 추출
     const subJobCdArr = Object.values(this.naverJobCodes).flatMap((category) =>
       Object.values(category),

@@ -2,7 +2,8 @@ import { Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { lastValueFrom } from 'rxjs';
-import { IJobCrawler, JobFilter } from '../interfaces/job-crawler.interface';
+import { IJobCrawler } from '../interfaces/job-crawler.interface';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { CompanyType, JobPosting } from '../interfaces/job-posting.interface';
 
 export abstract class BaseCrawler implements IJobCrawler {
@@ -10,7 +11,7 @@ export abstract class BaseCrawler implements IJobCrawler {
 
   abstract readonly company: CompanyType;
   abstract readonly baseUrl: string;
-  abstract readonly jobCategories: Record<string, any>;
+  abstract readonly jobCategories: Record<string, string>;
 
   constructor(
     protected readonly httpService: HttpService,
@@ -19,8 +20,8 @@ export abstract class BaseCrawler implements IJobCrawler {
     this.logger = new Logger(this.constructor.name);
   }
 
-  abstract fetchJobs(filters?: JobFilter): Promise<JobPosting[]>;
-  abstract parseJobData(rawData: any): JobPosting;
+  abstract fetchJobs(filters?: JobSearchQuery): Promise<JobPosting[]>;
+  abstract parseJobData(rawData: unknown): JobPosting;
 
   isValidPosting(posting: JobPosting): boolean {
     const now = new Date();

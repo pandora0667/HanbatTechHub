@@ -5,13 +5,13 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { GetJobsQueryDto } from '../../dto/requests/get-jobs-query.dto';
 import { JobPosting } from '../../interfaces/job-posting.interface';
 import {
   JOB_POSTING_CACHE_REPOSITORY,
   JobPostingCacheRepository,
 } from '../ports/job-posting-cache.repository';
 import { JobPostingSearchService } from '../../domain/services/job-posting-search.service';
+import { JobSearchQuery } from '../../domain/types/job-search-query.type';
 import { PaginatedResult } from '../../domain/types/paginated-result.type';
 import { JobPostingCollectorService } from '../services/job-posting-collector.service';
 
@@ -26,15 +26,15 @@ export class GetTechJobsUseCase {
     private readonly jobPostingCollectorService: JobPostingCollectorService,
   ) {}
 
-  async execute(query: GetJobsQueryDto): Promise<PaginatedResult<JobPosting>> {
+  async execute(query: JobSearchQuery): Promise<PaginatedResult<JobPosting>> {
     try {
-      const cacheKey = this.jobPostingSearchService.buildTechJobsCacheKey(query);
+      const cacheKey =
+        this.jobPostingSearchService.buildTechJobsCacheKey(query);
       const cachedJobs =
         await this.jobPostingCacheRepository.getSearchJobs(cacheKey);
 
       const jobs =
-        cachedJobs ??
-        (await this.fetchAndCacheJobs(cacheKey, query));
+        cachedJobs ?? (await this.fetchAndCacheJobs(cacheKey, query));
 
       const filteredJobs = this.jobPostingSearchService.filter(jobs, query);
       return this.jobPostingSearchService.paginate(filteredJobs, query);
@@ -52,7 +52,7 @@ export class GetTechJobsUseCase {
 
   private async fetchAndCacheJobs(
     cacheKey: string,
-    query: GetJobsQueryDto,
+    query: JobSearchQuery,
   ): Promise<JobPosting[]> {
     const jobs = await this.jobPostingCollectorService.fetchAllJobs({
       company: query.company,

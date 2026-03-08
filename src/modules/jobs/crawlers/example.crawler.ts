@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import {
   JobPosting,
   CareerType,
@@ -12,6 +11,7 @@ import {
   CAREER_TYPE,
   EMPLOYMENT_TYPE,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 
 /**
@@ -42,7 +42,7 @@ export class ExampleCompanyCrawler extends BaseJobCrawler {
    * @param query 검색 쿼리
    * @returns 표준화된 채용 공고 배열
    */
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]> {
     try {
       // 1. API 또는 웹페이지에서 데이터 가져오기
       const apiUrl = `${this.baseUrl}/api/jobs`;
@@ -76,7 +76,7 @@ export class ExampleCompanyCrawler extends BaseJobCrawler {
    * @param query 검색 쿼리
    * @returns API 요청 파라미터
    */
-  private buildQueryParams(query?: GetJobsQueryDto): Record<string, any> {
+  private buildQueryParams(query?: JobSearchQuery): Record<string, any> {
     const params: Record<string, any> = {
       limit: 100, // 기본 최대 가져올 항목 수
     };

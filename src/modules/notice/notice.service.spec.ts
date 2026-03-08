@@ -14,6 +14,7 @@ import { HanbatNoticeSourceGateway } from './infrastructure/gateways/hanbat-noti
 import { NoticeHtmlParserService } from './infrastructure/services/notice-html-parser.service';
 import { NOTICE_CACHE_REPOSITORY } from './application/ports/notice-cache.repository';
 import { NOTICE_SOURCE_GATEWAY } from './application/ports/notice-source.gateway';
+import { NoticeResponseMapper } from './presentation/mappers/notice-response.mapper';
 
 describe('NoticeService', () => {
   let service: NoticeService;
@@ -37,6 +38,7 @@ describe('NoticeService', () => {
         RedisNoticeCacheRepository,
         HanbatNoticeSourceGateway,
         NoticeHtmlParserService,
+        NoticeResponseMapper,
         {
           provide: NOTICE_CACHE_REPOSITORY,
           useExisting: RedisNoticeCacheRepository,

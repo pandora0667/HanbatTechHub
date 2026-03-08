@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BaseJobCrawler } from './base-job.crawler';
-import { GetJobsQueryDto } from '../dto/requests/get-jobs-query.dto';
 import { JobPosting } from '../interfaces/job-posting.interface';
 import {
   COMPANY_ENUM,
@@ -9,6 +8,7 @@ import {
   EMPLOYMENT_TYPE,
   LOCATION_TYPE,
 } from '../constants/job-codes.constant';
+import { JobSearchQuery } from '../domain/types/job-search-query.type';
 import { HttpClientUtil } from '../utils/http-client.util';
 import * as puppeteer from 'puppeteer';
 import * as cheerio from 'cheerio';
@@ -25,7 +25,7 @@ export class TossCrawler extends BaseJobCrawler {
     super(COMPANY_ENUM.TOSS, httpClient, 'https://toss.im/career/jobs');
   }
 
-  async fetchJobs(query?: GetJobsQueryDto): Promise<JobPosting[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<JobPosting[]> {
     try {
       const url = this.buildUrl(query);
       const browser = await puppeteer.launch({
@@ -60,7 +60,7 @@ export class TossCrawler extends BaseJobCrawler {
     }
   }
 
-  private buildUrl(query?: GetJobsQueryDto): string {
+  private buildUrl(query?: JobSearchQuery): string {
     const params = new URLSearchParams({
       category: 'Backend,Frontend,Infra,QA,Full Stack,App,Engineering',
     });
@@ -79,27 +79,37 @@ export class TossCrawler extends BaseJobCrawler {
           const $item = $(element);
           const href = $item.attr('href') || '';
           const id = href.split('job_id=')[1] || '';
-          
+
           // 제목 파싱
           const $titleDiv = $item.find('div[class*="css-17tyauz"]');
-          const title = $titleDiv.find('span[class*="typography--bold"]').text().trim();
-          const subTitle = $titleDiv.find('span[class*="typography--regular"]').text().trim();
-          
+          const title = $titleDiv
+            .find('span[class*="typography--bold"]')
+            .text()
+            .trim();
+          const subTitle = $titleDiv
+            .find('span[class*="typography--regular"]')
+            .text()
+            .trim();
+
           // 정보 파싱
           const $infoDiv = $item.find('div[class*="css-84449y"]');
           const info = $infoDiv.text().trim();
-          
+
           // 정보를 파싱합니다
-          const infoParts = info.split('・').map(part => part.trim()).filter(Boolean);
-          
+          const infoParts = info
+            .split('・')
+            .map((part) => part.trim())
+            .filter(Boolean);
+
           // 기술 스택 파싱
           const techStack = new Set<string>();
           const fullText = [title, subTitle, info].join(' ');
-          
+
           if (fullText.includes('TypeScript')) techStack.add('TypeScript');
           if (fullText.includes('JavaScript')) techStack.add('JavaScript');
           if (fullText.includes('Python')) techStack.add('Python');
-          if (fullText.includes('Java') && !fullText.includes('JavaScript')) techStack.add('Java');
+          if (fullText.includes('Java') && !fullText.includes('JavaScript'))
+            techStack.add('Java');
           if (fullText.includes('Kotlin')) techStack.add('Kotlin');
           if (fullText.includes('Swift')) techStack.add('Swift');
           if (fullText.includes('React')) techStack.add('React');
@@ -128,8 +138,10 @@ export class TossCrawler extends BaseJobCrawler {
           const rawTitle = `${title} ${subTitle}`;
           const cleanedTitle = this.cleanTitle(rawTitle);
 
-          this.logger.debug(`Found job: ${cleanedTitle} | ${infoParts.join(' | ')} | ${id}`);
-          
+          this.logger.debug(
+            `Found job: ${cleanedTitle} | ${infoParts.join(' | ')} | ${id}`,
+          );
+
           // 기술 직군 필터링
           if (
             fullText.includes('개발') ||
@@ -196,7 +208,7 @@ export class TossCrawler extends BaseJobCrawler {
     // 중복된 단어 제거 (대소문자 구분 없이)
     const words = cleanedTitle.split(' ');
     const seen = new Set<string>();
-    const uniqueWords = words.filter(word => {
+    const uniqueWords = words.filter((word) => {
       const lowerWord = word.toLowerCase();
       if (seen.has(lowerWord)) {
         return false;
@@ -234,19 +246,20 @@ export class TossCrawler extends BaseJobCrawler {
       'Security',
       'IDC',
       'Datacenter',
-      'RDBMS'
+      'RDBMS',
     ];
 
     // 제목에서 기술 스택 제거 (단, 직무명에 포함된 경우는 유지)
-    const finalWords = uniqueWords.filter(word => {
+    const finalWords = uniqueWords.filter((word) => {
       // Frontend Developer, Backend Developer 등의 직무명은 유지
       if (word.includes('Developer') || word.includes('Engineer')) {
         return true;
       }
       // 그 외 기술 스택은 제거
-      return !techKeywords.some(tech => 
-        word.toLowerCase() === tech.toLowerCase() ||
-        word.toLowerCase().includes(tech.toLowerCase())
+      return !techKeywords.some(
+        (tech) =>
+          word.toLowerCase() === tech.toLowerCase() ||
+          word.toLowerCase().includes(tech.toLowerCase()),
       );
     });
 
@@ -260,11 +273,19 @@ export class TossCrawler extends BaseJobCrawler {
   }
 
   private extractDepartment(fullText: string): string {
-    if (fullText.includes('Frontend') || fullText.includes('프론트엔드')) return 'Frontend';
-    if (fullText.includes('Backend') || fullText.includes('백엔드')) return 'Backend';
+    if (fullText.includes('Frontend') || fullText.includes('프론트엔드'))
+      return 'Frontend';
+    if (fullText.includes('Backend') || fullText.includes('백엔드'))
+      return 'Backend';
     if (fullText.includes('Data') || fullText.includes('데이터')) return 'Data';
-    if (fullText.includes('Security') || fullText.includes('보안')) return 'Security';
-    if (fullText.includes('DevOps') || fullText.includes('SRE') || fullText.includes('인프라')) return 'Infrastructure';
+    if (fullText.includes('Security') || fullText.includes('보안'))
+      return 'Security';
+    if (
+      fullText.includes('DevOps') ||
+      fullText.includes('SRE') ||
+      fullText.includes('인프라')
+    )
+      return 'Infrastructure';
     if (fullText.includes('QA')) return 'QA';
     if (fullText.includes('Android')) return 'Mobile';
     if (fullText.includes('iOS')) return 'Mobile';
@@ -285,7 +306,7 @@ export class TossCrawler extends BaseJobCrawler {
       '토스플레이스',
       '토스인컴',
       '토스인사이트',
-      '토스'
+      '토스',
     ];
 
     for (const company of companies) {
@@ -328,4 +349,4 @@ export class TossCrawler extends BaseJobCrawler {
     if (location.includes('글로벌')) return LOCATION_TYPE.GLOBAL;
     return LOCATION_TYPE.OTHER;
   }
-} 
+}

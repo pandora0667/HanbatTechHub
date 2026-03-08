@@ -5,7 +5,7 @@ import {
 } from '../ports/menu-cache.repository';
 import { MenuLoaderService } from '../services/menu-loader.service';
 import { MenuCalendarService } from '../../domain/services/menu-calendar.service';
-import { MenuResponseDto } from '../../dto/menu.dto';
+import { DailyMenu } from '../../domain/models/menu.model';
 
 @Injectable()
 export class GetWeeklyMenuUseCase {
@@ -16,7 +16,7 @@ export class GetWeeklyMenuUseCase {
     private readonly menuCalendarService: MenuCalendarService,
   ) {}
 
-  async execute(startDate?: string): Promise<MenuResponseDto[]> {
+  async execute(startDate?: string): Promise<DailyMenu[]> {
     const startDay = startDate ? new Date(startDate) : new Date();
     const mondayDate = this.menuCalendarService.getMondayDate(startDay);
     const formattedMondayDate = this.menuCalendarService.formatDate(mondayDate);

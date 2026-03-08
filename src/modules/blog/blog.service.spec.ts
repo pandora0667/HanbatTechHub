@@ -16,6 +16,7 @@ import { BlogSourceCatalogService } from './infrastructure/services/blog-source-
 import { RssBlogFeedReaderService } from './infrastructure/services/rss-blog-feed-reader.service';
 import { BLOG_POST_REPOSITORY } from './application/ports/blog-post.repository';
 import { BLOG_SOURCE_CATALOG } from './application/ports/blog-source-catalog';
+import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper';
 
 describe('BlogService', () => {
   let service: BlogService;
@@ -43,6 +44,7 @@ describe('BlogService', () => {
         RedisBlogPostRepository,
         BlogSourceCatalogService,
         RssBlogFeedReaderService,
+        BlogResponseMapper,
         {
           provide: BLOG_POST_REPOSITORY,
           useExisting: RedisBlogPostRepository,
