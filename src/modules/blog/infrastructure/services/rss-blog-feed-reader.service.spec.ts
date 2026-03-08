@@ -5,7 +5,7 @@ describe('RssBlogFeedReaderService', () => {
     const service = new RssBlogFeedReaderService();
 
     (service as any).parser = {
-      parseURL: jest.fn().mockResolvedValue({
+      parseString: jest.fn().mockResolvedValue({
         items: [
           {
             guid: 'post-1',
@@ -17,6 +17,9 @@ describe('RssBlogFeedReaderService', () => {
         ],
       }),
     };
+    jest
+      .spyOn(service as any, 'fetchFeedXml')
+      .mockResolvedValue('<rss><channel></channel></rss>');
 
     const posts = await service.read(
       {
@@ -47,5 +50,8 @@ describe('RssBlogFeedReaderService', () => {
         isTranslated: true,
       }),
     ]);
+    expect((service as any).parser.parseString).toHaveBeenCalledWith(
+      '<rss><channel></channel></rss>',
+    );
   });
 });

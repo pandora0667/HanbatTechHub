@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import axios, { AxiosRequestConfig } from 'axios';
+import * as https from 'https';
 import * as Parser from 'rss-parser';
 import { BlogPost } from '../../interfaces/blog.interface';
 import { BlogSourceDefinition } from '../../application/ports/blog-source-catalog';
@@ -42,8 +44,9 @@ export class RssBlogFeedReaderService {
     const existingPostMap = new Map(
       existingPosts.map((post) => [post.id, post]),
     );
-    const parser = this.resolveParser(source);
-    const feed = await parser.parseURL(source.url);
+    const parser = this.resolveParser();
+    const xml = await this.fetchFeedXml(source);
+    const feed = await parser.parseString(xml);
     this.logger.debug(
       `Fetched ${source.name} feed: ${feed.items.length} items`,
     );
@@ -112,20 +115,51 @@ export class RssBlogFeedReaderService {
       .trim();
   }
 
-  private resolveParser(
-    source: BlogSourceDefinition,
-  ): Parser<Record<string, unknown>, RssFeedItem> {
-    if (!source.headers && !source.requestOptions) {
-      return this.parser;
-    }
+  private resolveParser(): Parser<Record<string, unknown>, RssFeedItem> {
+    return this.parser;
+  }
 
-    return new Parser({
-      ...DEFAULT_PARSER_OPTIONS,
+  private async fetchFeedXml(source: BlogSourceDefinition): Promise<string> {
+    const response = await axios.get<string>(
+      source.url,
+      this.buildRequestConfig(source),
+    );
+    return response.data;
+  }
+
+  private buildRequestConfig(source: BlogSourceDefinition): AxiosRequestConfig {
+    const requestConfig: AxiosRequestConfig = {
+      responseType: 'text',
       headers: {
         ...DEFAULT_PARSER_OPTIONS.headers,
         ...source.headers,
       },
-      requestOptions: source.requestOptions,
-    });
+      timeout: 15000,
+      maxRedirects: 5,
+    };
+
+    if (source.requestOptions) {
+      const protocol = new URL(source.url).protocol;
+      if (protocol === 'https:') {
+        requestConfig.httpsAgent = new https.Agent(
+          this.toHttpsAgentOptions(source),
+        );
+      }
+    }
+
+    return requestConfig;
+  }
+
+  private toHttpsAgentOptions(
+    source: BlogSourceDefinition,
+  ): https.AgentOptions {
+    return {
+      rejectUnauthorized: source.requestOptions?.rejectUnauthorized,
+      ca: source.requestOptions?.ca,
+      cert: source.requestOptions?.cert,
+      key: source.requestOptions?.key,
+      passphrase: source.requestOptions?.passphrase,
+      timeout: source.requestOptions?.timeout,
+    };
   }
 }
