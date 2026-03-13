@@ -169,4 +169,32 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/workspace/radar (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/workspace/radar')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        overview: expect.objectContaining({
+          staleSources: expect.any(Number),
+          missingSources: expect.any(Number),
+          newOpportunities: expect.any(Number),
+          updatedOpportunities: expect.any(Number),
+          removedOpportunities: expect.any(Number),
+          closingSoonOpportunities: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          staleSources: expect.any(Object),
+          missingSources: expect.any(Object),
+          newOpportunities: expect.any(Object),
+          updatedOpportunities: expect.any(Object),
+          removedOpportunities: expect.any(Object),
+          upcomingDeadlines: expect.any(Object),
+        }),
+      }),
+    );
+  });
 });

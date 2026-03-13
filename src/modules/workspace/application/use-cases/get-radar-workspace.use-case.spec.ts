@@ -1,0 +1,149 @@
+import { Test } from '@nestjs/testing';
+import { SignalsService } from '../../../signals/signals.service';
+import { GetRadarWorkspaceUseCase } from './get-radar-workspace.use-case';
+import { RadarWorkspaceOverviewService } from '../../domain/services/radar-workspace-overview.service';
+
+describe('GetRadarWorkspaceUseCase', () => {
+  const signalsService = {
+    getSourceFreshnessSignals: jest.fn(),
+    getOpportunityChangeSignals: jest.fn(),
+    getUpcomingOpportunitySignals: jest.fn(),
+  };
+
+  let useCase: GetRadarWorkspaceUseCase;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        GetRadarWorkspaceUseCase,
+        RadarWorkspaceOverviewService,
+        {
+          provide: SignalsService,
+          useValue: signalsService,
+        },
+      ],
+    }).compile();
+
+    useCase = moduleRef.get(GetRadarWorkspaceUseCase);
+  });
+
+  it('aggregates radar sections from signal services', async () => {
+    signalsService.getSourceFreshnessSignals
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 2, fresh: 0, stale: 2, missing: 0 },
+        signals: [{ sourceId: 'content.blog.a' }, { sourceId: 'content.blog.b' }],
+      })
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 1, fresh: 0, stale: 0, missing: 1 },
+        signals: [{ sourceId: 'content.blog.c' }],
+      });
+    signalsService.getOpportunityChangeSignals
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 3, created: 3, updated: 0, removed: 0 },
+        signals: [{ jobId: '1' }, { jobId: '2' }, { jobId: '3' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-14T12:00:00.000Z',
+          ttlSeconds: 43200,
+          confidence: 0.8,
+          sourceIds: ['opportunity.jobs.naver'],
+        },
+      })
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 2, created: 0, updated: 2, removed: 0 },
+        signals: [{ jobId: '4' }, { jobId: '5' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-14T12:00:00.000Z',
+          ttlSeconds: 43200,
+          confidence: 0.8,
+          sourceIds: ['opportunity.jobs.naver'],
+        },
+      })
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 1, created: 0, updated: 0, removed: 1 },
+        signals: [{ jobId: '6' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-14T12:00:00.000Z',
+          ttlSeconds: 43200,
+          confidence: 0.8,
+          sourceIds: ['opportunity.jobs.naver'],
+        },
+      });
+    signalsService.getUpcomingOpportunitySignals.mockResolvedValue({
+      generatedAt: '2026-03-14T00:00:00.000Z',
+      summary: {
+        total: 4,
+        closingToday: 1,
+        closingSoon: 2,
+        watch: 1,
+        windowDays: 7,
+      },
+      signals: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }],
+      snapshot: {
+        collectedAt: '2026-03-14T00:00:00.000Z',
+        staleAt: '2026-03-14T12:00:00.000Z',
+        ttlSeconds: 43200,
+        confidence: 0.8,
+        sourceIds: ['opportunity.jobs.naver'],
+      },
+    });
+
+    const result = await useCase.execute({
+      company: 'NAVER',
+      sourceLimit: 1,
+      changeLimit: 5,
+      deadlineLimit: 4,
+      deadlineWindowDays: 7,
+    });
+
+    expect(signalsService.getSourceFreshnessSignals).toHaveBeenNthCalledWith(1, {
+      status: 'stale',
+    });
+    expect(signalsService.getSourceFreshnessSignals).toHaveBeenNthCalledWith(2, {
+      status: 'missing',
+    });
+    expect(signalsService.getOpportunityChangeSignals).toHaveBeenNthCalledWith(1, {
+      company: 'NAVER',
+      changeType: 'new',
+      limit: 5,
+    });
+    expect(signalsService.getOpportunityChangeSignals).toHaveBeenNthCalledWith(2, {
+      company: 'NAVER',
+      changeType: 'updated',
+      limit: 5,
+    });
+    expect(signalsService.getOpportunityChangeSignals).toHaveBeenNthCalledWith(3, {
+      company: 'NAVER',
+      changeType: 'removed',
+      limit: 5,
+    });
+    expect(signalsService.getUpcomingOpportunitySignals).toHaveBeenCalledWith({
+      days: 7,
+      limit: 4,
+    });
+    expect(result.overview).toEqual({
+      staleSources: 1,
+      missingSources: 1,
+      newOpportunities: 3,
+      updatedOpportunities: 2,
+      removedOpportunities: 1,
+      closingSoonOpportunities: 4,
+    });
+    expect(result.sections.staleSources.signals).toHaveLength(1);
+    expect(result.sections.missingSources.signals).toHaveLength(1);
+    expect(result.snapshot).toEqual(
+      expect.objectContaining({
+        sourceIds: ['opportunity.jobs.naver'],
+      }),
+    );
+  });
+});

@@ -65,7 +65,9 @@ import { SourceRegistryService } from '../src/modules/source-registry/source-reg
 import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
 import { WorkspaceService } from '../src/modules/workspace/workspace.service';
+import { GetRadarWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-radar-workspace.use-case';
 import { GetTodayWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-today-workspace.use-case';
+import { RadarWorkspaceOverviewService } from '../src/modules/workspace/domain/services/radar-workspace-overview.service';
 import { TodayWorkspaceOverviewService } from '../src/modules/workspace/domain/services/today-workspace-overview.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
@@ -212,7 +214,9 @@ describeLive('Live Integration Smoke', () => {
         GetOpportunityChangeSignalsUseCase,
         SourceRegistryService,
         WorkspaceService,
+        GetRadarWorkspaceUseCase,
         GetTodayWorkspaceUseCase,
+        RadarWorkspaceOverviewService,
         TodayWorkspaceOverviewService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
@@ -367,6 +371,33 @@ describeLive('Live Integration Smoke', () => {
     expect(response.sections.latestContent.items.length).toBeGreaterThan(0);
     expect(response.sections.latestNotices.items.length).toBeGreaterThan(0);
     expect(response.sections.freshness.summary.total).toBeGreaterThan(0);
+  });
+
+  it('builds a live radar workspace view from cached snapshots', async () => {
+    await menuService.getWeeklyMenu();
+    await noticeService.getNotices(1, 5);
+    await blogService.getAllPosts(1, 5);
+
+    const response = await workspaceService.getRadarWorkspace({
+      sourceLimit: 5,
+      changeLimit: 5,
+      deadlineLimit: 5,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.overview).toEqual(
+      expect.objectContaining({
+        staleSources: expect.any(Number),
+        missingSources: expect.any(Number),
+        newOpportunities: expect.any(Number),
+        updatedOpportunities: expect.any(Number),
+        removedOpportunities: expect.any(Number),
+        closingSoonOpportunities: expect.any(Number),
+      }),
+    );
+    expect(response.sections.staleSources.signals).toEqual(expect.any(Array));
+    expect(response.sections.missingSources.signals).toEqual(expect.any(Array));
+    expect(response.sections.upcomingDeadlines.signals).toEqual(expect.any(Array));
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
