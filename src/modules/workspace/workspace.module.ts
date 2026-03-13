@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BlogModule } from '../blog/blog.module';
 import { NoticeModule } from '../notice/notice.module';
 import { SignalsModule } from '../signals/signals.module';
+import { WorkspaceSectionBuilderService } from './application/services/workspace-section-builder.service';
 import { GetActWorkspaceUseCase } from './application/use-cases/get-act-workspace.use-case';
 import { GetRadarWorkspaceUseCase } from './application/use-cases/get-radar-workspace.use-case';
 import { GetTodayWorkspaceUseCase } from './application/use-cases/get-today-workspace.use-case';
@@ -17,6 +18,7 @@ import { WorkspaceService } from './workspace.service';
   controllers: [WorkspaceController],
   providers: [
     WorkspaceService,
+    WorkspaceSectionBuilderService,
     GetActWorkspaceUseCase,
     GetRadarWorkspaceUseCase,
     GetTodayWorkspaceUseCase,

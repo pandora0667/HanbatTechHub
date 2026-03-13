@@ -8,6 +8,7 @@ import { JobPostingSearchService } from './domain/services/job-posting-search.se
 import { JobPostingChangeDetectorService } from './domain/services/job-posting-change-detector.service';
 import { JobCrawlerExecutionService } from './application/services/job-crawler-execution.service';
 import { JobPostingCollectorService } from './application/services/job-posting-collector.service';
+import { JobPostingSnapshotReaderService } from './application/services/job-posting-snapshot-reader.service';
 import { GetCompanyJobsUseCase } from './application/use-cases/get-company-jobs.use-case';
 import { GetSupportedCompaniesUseCase } from './application/use-cases/get-supported-companies.use-case';
 import { GetTechJobsUseCase } from './application/use-cases/get-tech-jobs.use-case';
@@ -29,6 +30,7 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     JobPostingChangeDetectorService,
     JobCrawlerExecutionService,
     JobPostingCollectorService,
+    JobPostingSnapshotReaderService,
     GetCompanyJobsUseCase,
     GetSupportedCompaniesUseCase,
     GetTechJobsUseCase,
@@ -47,6 +49,11 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     },
     ...CRAWLER_PROVIDERS,
   ],
-  exports: [JobsService, JobPostingSearchService, JOB_POSTING_CACHE_REPOSITORY],
+  exports: [
+    JobsService,
+    JobPostingSearchService,
+    JobPostingSnapshotReaderService,
+    JOB_POSTING_CACHE_REPOSITORY,
+  ],
 })
 export class JobsModule {}

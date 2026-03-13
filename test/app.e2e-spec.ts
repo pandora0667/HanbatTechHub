@@ -6,6 +6,7 @@ import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { RedisService } from '../src/modules/redis/redis.service';
+import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
 class InMemoryRedisService {
   private readonly store = new Map<string, string>();
@@ -68,6 +69,7 @@ describe('AppController (e2e)', () => {
         forbidNonWhitelisted: false,
       }),
     );
+    app.useGlobalFilters(new HttpExceptionFilter());
     app.setGlobalPrefix('api/v1', {
       exclude: ['/health'],
     });
@@ -106,6 +108,32 @@ describe('AppController (e2e)', () => {
         (source: { context: string }) => source.context === 'opportunity',
       ),
     ).toBe(true);
+  });
+
+  it('/api/v1/sources/health (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/sources/health')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        sources: expect.any(Array),
+      }),
+    );
+    expect(response.body.sources.length).toBeGreaterThan(0);
+    expect(response.body.sources[0]).toEqual(
+      expect.objectContaining({
+        sourceId: expect.any(String),
+        state: expect.any(String),
+        riskTier: expect.any(String),
+        safeCollectionPolicy: expect.any(String),
+        maxCollectionsPerDay: expect.any(Number),
+        minimumIntervalHours: expect.any(Number),
+        freshnessStatus: expect.any(String),
+        failureCount: expect.any(Number),
+      }),
+    );
   });
 
   it('/api/v1/signals/freshness (GET)', async () => {
@@ -165,6 +193,62 @@ describe('AppController (e2e)', () => {
           upcomingOpportunities: expect.any(Object),
           latestContent: expect.any(Object),
           latestNotices: expect.any(Object),
+        }),
+      }),
+    );
+  });
+
+  it('/api/v1/institutions (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        institutions: expect.any(Array),
+      }),
+    );
+    expect(response.body.institutions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'HANBAT',
+          name: expect.any(String),
+          region: expect.any(String),
+          audience: expect.any(String),
+        }),
+      ]),
+    );
+  });
+
+  it('/api/v1/institutions/HANBAT/overview (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/HANBAT/overview')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        institution: expect.objectContaining({
+          id: 'HANBAT',
+          name: expect.any(String),
+          region: expect.any(String),
+          audience: expect.any(String),
+        }),
+        summary: expect.objectContaining({
+          regularNotices: expect.any(Number),
+          newNotices: expect.any(Number),
+          featuredNotices: expect.any(Number),
+          todayNotices: expect.any(Number),
+          weeklyMenus: expect.any(Number),
+          lunchAvailableDays: expect.any(Number),
+          dinnerAvailableDays: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          latestNotices: expect.any(Array),
+          newNotices: expect.any(Array),
+          featuredNotices: expect.any(Array),
+          weeklyMenus: expect.any(Array),
+          sources: expect.any(Array),
         }),
       }),
     );
@@ -245,6 +329,54 @@ describe('AppController (e2e)', () => {
           totalSkills: expect.any(Number),
         }),
         skills: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/content/feed (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/content/feed?keyword=typescript')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalItems: expect.any(Number),
+          companies: expect.any(Number),
+          filtered: true,
+        }),
+        meta: expect.objectContaining({
+          totalCount: expect.any(Number),
+          currentPage: expect.any(Number),
+          totalPages: expect.any(Number),
+          hasNextPage: expect.any(Boolean),
+          hasPreviousPage: expect.any(Boolean),
+          limit: expect.any(Number),
+          keyword: 'typescript',
+        }),
+        items: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/content/trends (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/content/trends?days=14&limit=5')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalItems: expect.any(Number),
+          companies: expect.any(Number),
+          windowDays: 14,
+          totalTopics: expect.any(Number),
+        }),
+        trends: expect.any(Array),
+        sources: expect.any(Array),
       }),
     );
   });
@@ -344,6 +476,7 @@ describe('AppController (e2e)', () => {
           totalPages: expect.any(Number),
           hasNextPage: expect.any(Boolean),
           hasPreviousPage: expect.any(Boolean),
+          limit: expect.any(Number),
           sort: 'deadline',
           deadlineWindowDays: expect.any(Number),
         }),
@@ -412,6 +545,22 @@ describe('AppController (e2e)', () => {
           upcomingDeadlines: expect.any(Array),
         }),
         sources: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/watchlist/preview without criteria (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/watchlist/preview')
+      .expect(400);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        timestamp: expect.any(String),
+        path: '/api/v1/watchlist/preview',
+        statusCode: 400,
+        error: expect.any(String),
+        message: expect.anything(),
       }),
     );
   });

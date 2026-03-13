@@ -12,6 +12,9 @@ export type SourceTier =
   | 'public_page'
   | 'browser_automation';
 
+export type SourceRiskTier = 'low' | 'medium' | 'high';
+export type SourceState = 'active' | 'paused' | 'disabled';
+
 export interface SnapshotMetadata {
   collectedAt: string;
   staleAt: string;
@@ -28,9 +31,13 @@ export interface SourceRegistryEntry {
   collectionMode: SourceCollectionMode;
   tier: SourceTier;
   active: boolean;
+  state: SourceState;
   collectionUrl: string;
   maxCollectionsPerDay: number;
+  minimumIntervalHours: number;
   freshnessTtlSeconds: number;
   confidence: number;
+  riskTier: SourceRiskTier;
+  safeCollectionPolicy: string;
   notes?: string;
 }

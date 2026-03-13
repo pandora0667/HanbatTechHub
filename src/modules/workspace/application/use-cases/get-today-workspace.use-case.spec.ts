@@ -1,9 +1,8 @@
 import { Test } from '@nestjs/testing';
-import { BlogService } from '../../../blog/blog.service';
-import { NoticeService } from '../../../notice/notice.service';
 import { SignalsService } from '../../../signals/signals.service';
 import { GetTodayWorkspaceUseCase } from './get-today-workspace.use-case';
 import { TodayWorkspaceOverviewService } from '../../domain/services/today-workspace-overview.service';
+import { WorkspaceSectionBuilderService } from '../services/workspace-section-builder.service';
 
 describe('GetTodayWorkspaceUseCase', () => {
   const signalsService = {
@@ -11,11 +10,9 @@ describe('GetTodayWorkspaceUseCase', () => {
     getOpportunityChangeSignals: jest.fn(),
     getUpcomingOpportunitySignals: jest.fn(),
   };
-  const blogService = {
-    getAllPosts: jest.fn(),
-  };
-  const noticeService = {
-    getNotices: jest.fn(),
+  const workspaceSectionBuilderService = {
+    getLatestContent: jest.fn(),
+    getLatestNotices: jest.fn(),
   };
 
   let useCase: GetTodayWorkspaceUseCase;
@@ -32,12 +29,8 @@ describe('GetTodayWorkspaceUseCase', () => {
           useValue: signalsService,
         },
         {
-          provide: BlogService,
-          useValue: blogService,
-        },
-        {
-          provide: NoticeService,
-          useValue: noticeService,
+          provide: WorkspaceSectionBuilderService,
+          useValue: workspaceSectionBuilderService,
         },
       ],
     }).compile();
@@ -91,7 +84,7 @@ describe('GetTodayWorkspaceUseCase', () => {
         sourceIds: ['opportunity.jobs.naver'],
       },
     });
-    blogService.getAllPosts.mockResolvedValue({
+    workspaceSectionBuilderService.getLatestContent.mockResolvedValue({
       items: [{ id: '1' }, { id: '2' }],
       meta: {
         totalCount: 2,
@@ -108,7 +101,7 @@ describe('GetTodayWorkspaceUseCase', () => {
         },
       },
     });
-    noticeService.getNotices.mockResolvedValue({
+    workspaceSectionBuilderService.getLatestNotices.mockResolvedValue({
       items: [{ nttId: '1' }],
       meta: {
         totalCount: 1,
@@ -141,8 +134,8 @@ describe('GetTodayWorkspaceUseCase', () => {
       limit: 2,
       days: 7,
     });
-    expect(blogService.getAllPosts).toHaveBeenCalledWith(1, 2);
-    expect(noticeService.getNotices).toHaveBeenCalledWith(1, 1);
+    expect(workspaceSectionBuilderService.getLatestContent).toHaveBeenCalledWith(2);
+    expect(workspaceSectionBuilderService.getLatestNotices).toHaveBeenCalledWith(1);
     expect(result.overview).toEqual({
       staleSources: 1,
       missingSources: 1,

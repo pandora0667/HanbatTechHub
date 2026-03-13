@@ -5,11 +5,13 @@ import { SignalsService } from '../../../signals/signals.service';
 import { GetRadarWorkspaceQueryDto } from '../../dto/get-radar-workspace-query.dto';
 import { RadarWorkspaceResponseDto } from '../../dto/radar-workspace.response.dto';
 import { RadarWorkspaceOverviewService } from '../../domain/services/radar-workspace-overview.service';
+import { WorkspaceSectionBuilderService } from '../services/workspace-section-builder.service';
 
 @Injectable()
 export class GetRadarWorkspaceUseCase {
   constructor(
     private readonly signalsService: SignalsService,
+    private readonly workspaceSectionBuilderService: WorkspaceSectionBuilderService,
     private readonly radarWorkspaceOverviewService: RadarWorkspaceOverviewService,
   ) {}
 
@@ -60,35 +62,31 @@ export class GetRadarWorkspaceUseCase {
       (snapshot): snapshot is SnapshotMetadata => snapshot !== undefined,
     );
 
-    staleSources.signals = staleSources.signals.slice(0, query.sourceLimit ?? 10);
-    staleSources.summary.total = staleSources.signals.length;
-    staleSources.summary.stale = staleSources.signals.length;
-    staleSources.summary.fresh = 0;
-    staleSources.summary.missing = 0;
-
-    missingSources.signals = missingSources.signals.slice(
-      0,
-      query.sourceLimit ?? 10,
-    );
-    missingSources.summary.total = missingSources.signals.length;
-    missingSources.summary.missing = missingSources.signals.length;
-    missingSources.summary.fresh = 0;
-    missingSources.summary.stale = 0;
+    const limitedStaleSources =
+      this.workspaceSectionBuilderService.limitFreshnessSignals(
+        staleSources,
+        query.sourceLimit ?? 10,
+      );
+    const limitedMissingSources =
+      this.workspaceSectionBuilderService.limitFreshnessSignals(
+        missingSources,
+        query.sourceLimit ?? 10,
+      );
 
     return {
       generatedAt,
       snapshot: mergeSnapshotMetadata(snapshots),
       overview: this.radarWorkspaceOverviewService.build({
-        staleSources,
-        missingSources,
+        staleSources: limitedStaleSources,
+        missingSources: limitedMissingSources,
         newOpportunities,
         updatedOpportunities,
         removedOpportunities,
         upcomingDeadlines,
       }),
       sections: {
-        staleSources,
-        missingSources,
+        staleSources: limitedStaleSources,
+        missingSources: limitedMissingSources,
         newOpportunities,
         updatedOpportunities,
         removedOpportunities,

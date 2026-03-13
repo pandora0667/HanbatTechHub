@@ -1,8 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
-import {
-  JOB_POSTING_CACHE_REPOSITORY,
-  JobPostingCacheRepository,
-} from '../../../jobs/application/ports/job-posting-cache.repository';
+import { Injectable } from '@nestjs/common';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { SkillIntelligenceService } from '../../../skill-intelligence/skill-intelligence.service';
 import { SignalsService } from '../../../signals/signals.service';
 import { SourceRegistryService } from '../../../source-registry/source-registry.service';
@@ -13,8 +10,7 @@ import { MarketOverviewBuilderService } from '../../domain/services/market-overv
 @Injectable()
 export class GetMarketOverviewUseCase {
   constructor(
-    @Inject(JOB_POSTING_CACHE_REPOSITORY)
-    private readonly jobPostingCacheRepository: JobPostingCacheRepository,
+    private readonly jobPostingSnapshotReaderService: JobPostingSnapshotReaderService,
     private readonly skillIntelligenceService: SkillIntelligenceService,
     private readonly signalsService: SignalsService,
     private readonly sourceRegistryService: SourceRegistryService,
@@ -26,7 +22,7 @@ export class GetMarketOverviewUseCase {
   ): Promise<MarketOverviewResponseDto> {
     const [allJobsEntry, changeSignals, deadlineSignals, freshnessSignals, skillMap] =
       await Promise.all([
-        this.jobPostingCacheRepository.getAllJobs(),
+        this.jobPostingSnapshotReaderService.getResolvedAllJobs(),
         this.signalsService.getOpportunityChangeSignals({ limit: 500 }),
         this.signalsService.getUpcomingOpportunitySignals({
           days: query.deadlineWindowDays,

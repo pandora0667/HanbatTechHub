@@ -1,8 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  JOB_POSTING_CACHE_REPOSITORY,
-  JobPostingCacheRepository,
-} from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { COMPANY_ENUM, EMPLOYMENT_TYPE, CAREER_TYPE, LOCATION_TYPE } from '../../../jobs/constants/job-codes.constant';
 import { OpportunitySignalBuilderService } from '../../domain/services/opportunity-signal-builder.service';
 import { GetUpcomingOpportunitySignalsUseCase } from './get-upcoming-opportunity-signals.use-case';
@@ -10,19 +7,9 @@ import { GetUpcomingOpportunitySignalsUseCase } from './get-upcoming-opportunity
 describe('GetUpcomingOpportunitySignalsUseCase', () => {
   let useCase: GetUpcomingOpportunitySignalsUseCase;
 
-  const jobPostingCacheRepository: jest.Mocked<JobPostingCacheRepository> = {
-    initializeJobsCache: jest.fn(),
-    clearDerivedSearchCaches: jest.fn(),
-    getSearchJobs: jest.fn(),
-    setSearchJobs: jest.fn(),
-    getCompanyJobs: jest.fn(),
-    setCompanyJobs: jest.fn(),
-    getAllJobs: jest.fn(),
-    setAllJobs: jest.fn(),
-    getJobChangeSignals: jest.fn(),
-    setJobChangeSignals: jest.fn(),
-    getLastUpdate: jest.fn(),
-    setLastUpdate: jest.fn(),
+  const jobPostingSnapshotReaderService = {
+    getResolvedAllJobs: jest.fn(),
+    getResolvedCompanyJobs: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -31,8 +18,8 @@ describe('GetUpcomingOpportunitySignalsUseCase', () => {
         GetUpcomingOpportunitySignalsUseCase,
         OpportunitySignalBuilderService,
         {
-          provide: JOB_POSTING_CACHE_REPOSITORY,
-          useValue: jobPostingCacheRepository,
+          provide: JobPostingSnapshotReaderService,
+          useValue: jobPostingSnapshotReaderService,
         },
       ],
     }).compile();
@@ -42,7 +29,7 @@ describe('GetUpcomingOpportunitySignalsUseCase', () => {
   });
 
   it('returns upcoming deadline signals from cached jobs', async () => {
-    jobPostingCacheRepository.getAllJobs.mockResolvedValue({
+    jobPostingSnapshotReaderService.getResolvedAllJobs.mockResolvedValue({
       jobs: [
         {
           id: 'line-1',
@@ -80,6 +67,7 @@ describe('GetUpcomingOpportunitySignalsUseCase', () => {
 
     const result = await useCase.execute({ days: 7, limit: 5 });
 
+    expect(jobPostingSnapshotReaderService.getResolvedAllJobs).toHaveBeenCalled();
     expect(result.summary.total).toBe(1);
     expect(result.signals[0]).toEqual(
       expect.objectContaining({

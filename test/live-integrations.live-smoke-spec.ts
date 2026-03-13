@@ -49,6 +49,7 @@ import { TranslationService } from '../src/modules/translation/services/translat
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpClientUtil } from '../src/modules/jobs/utils/http-client.util';
 import { JobPostingSearchService } from '../src/modules/jobs/domain/services/job-posting-search.service';
+import { JobPostingSnapshotReaderService } from '../src/modules/jobs/application/services/job-posting-snapshot-reader.service';
 import { NaverCrawler } from '../src/modules/jobs/crawlers/naver.crawler';
 import { KakaoCrawler } from '../src/modules/jobs/crawlers/kakao.crawler';
 import { LineCrawler } from '../src/modules/jobs/crawlers/line.crawler';
@@ -73,6 +74,7 @@ import { ActWorkspaceOverviewService } from '../src/modules/workspace/domain/ser
 import { RadarWorkspaceOverviewService } from '../src/modules/workspace/domain/services/radar-workspace-overview.service';
 import { TodayWorkspaceOverviewService } from '../src/modules/workspace/domain/services/today-workspace-overview.service';
 import { WorkspaceActionBuilderService } from '../src/modules/workspace/domain/services/workspace-action-builder.service';
+import { WorkspaceSectionBuilderService } from '../src/modules/workspace/application/services/workspace-section-builder.service';
 import { CompanyIntelligenceService } from '../src/modules/company-intelligence/company-intelligence.service';
 import { GetCompanyBriefUseCase } from '../src/modules/company-intelligence/application/use-cases/get-company-brief.use-case';
 import { CompanyBriefOverviewService } from '../src/modules/company-intelligence/domain/services/company-brief-overview.service';
@@ -97,6 +99,15 @@ import { MarketOverviewBuilderService } from '../src/modules/market-intelligence
 import { WatchlistPreviewService } from '../src/modules/watchlist-preview/watchlist-preview.service';
 import { GetWatchlistPreviewUseCase } from '../src/modules/watchlist-preview/application/use-cases/get-watchlist-preview.use-case';
 import { WatchlistPreviewMatcherService } from '../src/modules/watchlist-preview/domain/services/watchlist-preview-matcher.service';
+import { SourceRuntimeStatusService } from '../src/modules/source-registry/application/services/source-runtime-status.service';
+import { GetSourceHealthUseCase } from '../src/modules/source-registry/application/use-cases/get-source-health.use-case';
+import { InstitutionIntelligenceService } from '../src/modules/institution-intelligence/institution-intelligence.service';
+import { GetInstitutionsUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institutions.use-case';
+import { GetInstitutionOverviewUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-overview.use-case';
+import { ContentIntelligenceService } from '../src/modules/content-intelligence/content-intelligence.service';
+import { GetContentFeedUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-feed.use-case';
+import { GetContentTrendsUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-trends.use-case';
+import { ContentTopicExtractorService } from '../src/modules/content-intelligence/domain/services/content-topic-extractor.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -168,6 +179,9 @@ describeLive('Live Integration Smoke', () => {
   let opportunityIntelligenceService: OpportunityIntelligenceService;
   let marketIntelligenceService: MarketIntelligenceService;
   let watchlistPreviewService: WatchlistPreviewService;
+  let institutionIntelligenceService: InstitutionIntelligenceService;
+  let contentIntelligenceService: ContentIntelligenceService;
+  let getSourceHealthUseCase: GetSourceHealthUseCase;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -237,6 +251,7 @@ describeLive('Live Integration Smoke', () => {
         },
         RedisJobPostingCacheRepository,
         JobPostingSearchService,
+        JobPostingSnapshotReaderService,
         {
           provide: JOB_POSTING_CACHE_REPOSITORY,
           useExisting: RedisJobPostingCacheRepository,
@@ -254,6 +269,7 @@ describeLive('Live Integration Smoke', () => {
         GetActWorkspaceUseCase,
         GetRadarWorkspaceUseCase,
         GetTodayWorkspaceUseCase,
+        WorkspaceSectionBuilderService,
         WorkspaceActionBuilderService,
         ActWorkspaceOverviewService,
         RadarWorkspaceOverviewService,
@@ -279,6 +295,15 @@ describeLive('Live Integration Smoke', () => {
         WatchlistPreviewService,
         GetWatchlistPreviewUseCase,
         WatchlistPreviewMatcherService,
+        SourceRuntimeStatusService,
+        GetSourceHealthUseCase,
+        InstitutionIntelligenceService,
+        GetInstitutionsUseCase,
+        GetInstitutionOverviewUseCase,
+        ContentIntelligenceService,
+        GetContentFeedUseCase,
+        GetContentTrendsUseCase,
+        ContentTopicExtractorService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -298,6 +323,11 @@ describeLive('Live Integration Smoke', () => {
     );
     marketIntelligenceService = moduleRef.get(MarketIntelligenceService);
     watchlistPreviewService = moduleRef.get(WatchlistPreviewService);
+    institutionIntelligenceService = moduleRef.get(
+      InstitutionIntelligenceService,
+    );
+    contentIntelligenceService = moduleRef.get(ContentIntelligenceService);
+    getSourceHealthUseCase = moduleRef.get(GetSourceHealthUseCase);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -375,6 +405,92 @@ describeLive('Live Integration Smoke', () => {
         link: expect.stringMatching(/^https?:\/\//),
       }),
     );
+  });
+
+  it('builds live source health metadata from cached snapshots', async () => {
+    await menuService.getWeeklyMenu();
+    await noticeService.getNotices(1, 5);
+    await blogService.getAllPosts(1, 5);
+
+    const response = await getSourceHealthUseCase.execute();
+
+    expect(response.sources.length).toBeGreaterThan(0);
+    expect(response.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: 'institution.hanbat.menu',
+          state: 'active',
+          riskTier: expect.any(String),
+          safeCollectionPolicy: expect.any(String),
+          lastSuccessAt: expect.any(String),
+        }),
+        expect.objectContaining({
+          sourceId: 'institution.hanbat.notice',
+          state: 'active',
+          riskTier: expect.any(String),
+          safeCollectionPolicy: expect.any(String),
+          lastSuccessAt: expect.any(String),
+        }),
+      ]),
+    );
+  });
+
+  it('builds a live institution overview from cached institution snapshots', async () => {
+    await menuService.getWeeklyMenu();
+    await noticeService.getNotices(1, 5);
+
+    const registry = institutionIntelligenceService.getInstitutions();
+    const response =
+      await institutionIntelligenceService.getInstitutionOverview('HANBAT');
+
+    expect(registry.institutions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'HANBAT',
+        }),
+      ]),
+    );
+    expect(response.institution.id).toBe('HANBAT');
+    expect(response.summary.regularNotices).toBeGreaterThan(0);
+    expect(response.summary.weeklyMenus).toBe(7);
+    expect(response.sections.latestNotices.length).toBeGreaterThan(0);
+    expect(response.sections.weeklyMenus).toHaveLength(7);
+    expect(response.sections.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'institution.hanbat.menu' }),
+        expect.objectContaining({ id: 'institution.hanbat.notice' }),
+      ]),
+    );
+  });
+
+  it('builds live content feed and trends from cached content snapshots', async () => {
+    await blogService.getAllPosts(1, 10);
+
+    const feed = await contentIntelligenceService.getFeed({
+      page: 1,
+      limit: 5,
+    });
+    const trends = await contentIntelligenceService.getTrends({
+      days: 365,
+      minMentions: 1,
+      limit: 10,
+    });
+
+    expect(feed.summary.totalItems).toBeGreaterThan(0);
+    expect(feed.items.length).toBeGreaterThan(0);
+    expect(feed.meta.snapshot).toEqual(
+      expect.objectContaining({
+        collectedAt: expect.any(String),
+        sourceIds: expect.arrayContaining([
+          expect.stringMatching(/^content\.blog\./),
+        ]),
+      }),
+    );
+    expect(feed.sources.length).toBeGreaterThan(0);
+    expect(trends.summary.totalItems).toBeGreaterThan(0);
+    expect(trends.summary.totalTopics).toBeGreaterThan(0);
+    expect(trends.trends.length).toBeGreaterThan(0);
+    expect(trends.sources.length).toBeGreaterThan(0);
   });
 
   it('fetches live job data from major crawlers', async () => {

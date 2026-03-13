@@ -1,9 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
-import {
-  JOB_POSTING_CACHE_REPOSITORY,
-  JobPostingCacheRepository,
-} from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { SignalsService } from '../../../signals/signals.service';
 import { SkillIntelligenceService } from '../../../skill-intelligence/skill-intelligence.service';
 import { SourceRegistryService } from '../../../source-registry/source-registry.service';
@@ -11,9 +8,9 @@ import { GetMarketOverviewUseCase } from './get-market-overview.use-case';
 import { MarketOverviewBuilderService } from '../../domain/services/market-overview-builder.service';
 
 describe('GetMarketOverviewUseCase', () => {
-  const jobPostingCacheRepository = {
-    getAllJobs: jest.fn(),
-  } as unknown as Pick<JobPostingCacheRepository, 'getAllJobs'>;
+  const jobPostingSnapshotReaderService = {
+    getResolvedAllJobs: jest.fn(),
+  };
   const signalsService = {
     getOpportunityChangeSignals: jest.fn(),
     getUpcomingOpportunitySignals: jest.fn(),
@@ -39,8 +36,8 @@ describe('GetMarketOverviewUseCase', () => {
         GetMarketOverviewUseCase,
         MarketOverviewBuilderService,
         {
-          provide: JOB_POSTING_CACHE_REPOSITORY,
-          useValue: jobPostingCacheRepository,
+          provide: JobPostingSnapshotReaderService,
+          useValue: jobPostingSnapshotReaderService,
         },
         {
           provide: SignalsService,
@@ -61,7 +58,7 @@ describe('GetMarketOverviewUseCase', () => {
   });
 
   it('builds a market overview from cached snapshots', async () => {
-    (jobPostingCacheRepository.getAllJobs as jest.Mock).mockResolvedValue({
+    jobPostingSnapshotReaderService.getResolvedAllJobs.mockResolvedValue({
       jobs: [
         {
           id: 'naver-backend',
@@ -170,5 +167,6 @@ describe('GetMarketOverviewUseCase', () => {
       }),
     );
     expect(result.sections.topSkills).toHaveLength(2);
+    expect(jobPostingSnapshotReaderService.getResolvedAllJobs).toHaveBeenCalled();
   });
 });

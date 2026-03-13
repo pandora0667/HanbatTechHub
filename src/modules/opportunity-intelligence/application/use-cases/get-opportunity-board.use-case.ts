@@ -4,6 +4,7 @@ import {
   JOB_POSTING_CACHE_REPOSITORY,
   JobPostingCacheRepository,
 } from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { JobPostingSearchService } from '../../../jobs/domain/services/job-posting-search.service';
 import { JobPosting } from '../../../jobs/interfaces/job-posting.interface';
 import { SourceRegistryService } from '../../../source-registry/source-registry.service';
@@ -15,6 +16,7 @@ export class GetOpportunityBoardUseCase {
   constructor(
     @Inject(JOB_POSTING_CACHE_REPOSITORY)
     private readonly jobPostingCacheRepository: JobPostingCacheRepository,
+    private readonly jobPostingSnapshotReaderService: JobPostingSnapshotReaderService,
     private readonly jobPostingSearchService: JobPostingSearchService,
     private readonly sourceRegistryService: SourceRegistryService,
   ) {}
@@ -23,7 +25,7 @@ export class GetOpportunityBoardUseCase {
     query: GetOpportunitiesQueryDto,
   ): Promise<OpportunityBoardResponseDto> {
     const [allJobsEntry, changeSignals] = await Promise.all([
-      this.jobPostingCacheRepository.getAllJobs(),
+      this.jobPostingSnapshotReaderService.getResolvedAllJobs(),
       this.jobPostingCacheRepository.getJobChangeSignals(),
     ]);
     const generatedAt = new Date().toISOString();
@@ -45,8 +47,13 @@ export class GetOpportunityBoardUseCase {
           totalPages: 0,
           hasNextPage: false,
           hasPreviousPage: false,
+          limit: query.limit ?? 20,
           sort: query.sort ?? 'deadline',
           deadlineWindowDays: query.deadlineWindowDays ?? 7,
+          company: query.company,
+          keyword: query.keyword,
+          onlyClosingSoon: query.onlyClosingSoon ?? false,
+          onlyChanged: query.onlyChanged ?? false,
           snapshot: undefined,
         },
         items: [],
@@ -111,8 +118,13 @@ export class GetOpportunityBoardUseCase {
       },
       meta: {
         ...paginated.meta,
+        limit: query.limit ?? 20,
         sort: query.sort ?? 'deadline',
         deadlineWindowDays: query.deadlineWindowDays ?? 7,
+        company: query.company,
+        keyword: query.keyword,
+        onlyClosingSoon: query.onlyClosingSoon ?? false,
+        onlyChanged: query.onlyChanged ?? false,
         snapshot: allJobsEntry.snapshot,
       },
       items,

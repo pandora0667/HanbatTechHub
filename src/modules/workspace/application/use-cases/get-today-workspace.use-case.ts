@@ -1,19 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { mergeSnapshotMetadata } from '../../../../common/utils/snapshot.util';
-import { BlogService } from '../../../blog/blog.service';
-import { NoticeService } from '../../../notice/notice.service';
 import { SignalsService } from '../../../signals/signals.service';
 import { GetTodayWorkspaceQueryDto } from '../../dto/get-today-workspace-query.dto';
 import { TodayWorkspaceResponseDto } from '../../dto/today-workspace.response.dto';
 import { TodayWorkspaceOverviewService } from '../../domain/services/today-workspace-overview.service';
 import { SnapshotMetadata } from '../../../../common/types/snapshot.types';
+import { WorkspaceSectionBuilderService } from '../services/workspace-section-builder.service';
 
 @Injectable()
 export class GetTodayWorkspaceUseCase {
   constructor(
     private readonly signalsService: SignalsService,
-    private readonly blogService: BlogService,
-    private readonly noticeService: NoticeService,
+    private readonly workspaceSectionBuilderService: WorkspaceSectionBuilderService,
     private readonly todayWorkspaceOverviewService: TodayWorkspaceOverviewService,
   ) {}
 
@@ -35,8 +33,8 @@ export class GetTodayWorkspaceUseCase {
         limit: query.deadlineLimit,
         days: query.deadlineWindowDays,
       }),
-      this.blogService.getAllPosts(1, query.contentLimit),
-      this.noticeService.getNotices(1, query.noticeLimit),
+      this.workspaceSectionBuilderService.getLatestContent(query.contentLimit ?? 5),
+      this.workspaceSectionBuilderService.getLatestNotices(query.noticeLimit ?? 5),
     ]);
     const generatedAt = new Date().toISOString();
     const snapshots = [

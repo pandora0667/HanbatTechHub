@@ -91,10 +91,25 @@ class OpportunityBoardMetaDto {
   hasPreviousPage: boolean;
 
   @ApiProperty()
+  limit: number;
+
+  @ApiProperty()
   sort: string;
 
   @ApiProperty()
   deadlineWindowDays: number;
+
+  @ApiProperty({ required: false })
+  company?: string;
+
+  @ApiProperty({ required: false })
+  keyword?: string;
+
+  @ApiProperty()
+  onlyClosingSoon: boolean;
+
+  @ApiProperty()
+  onlyChanged: boolean;
 
   @ApiProperty({ type: SnapshotDto, required: false })
   snapshot?: SnapshotDto;

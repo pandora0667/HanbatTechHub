@@ -39,6 +39,6 @@ import { MenuResponseMapper } from './presentation/mappers/menu-response.mapper'
       useExisting: HanbatMenuSourceGateway,
     },
   ],
-  exports: [MenuService, MENU_CACHE_REPOSITORY],
+  exports: [MenuService, MENU_CACHE_REPOSITORY, MenuCalendarService],
 })
 export class MenuModule {}

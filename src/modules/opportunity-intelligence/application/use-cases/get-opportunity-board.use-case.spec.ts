@@ -4,17 +4,20 @@ import {
   JOB_POSTING_CACHE_REPOSITORY,
   JobPostingCacheRepository,
 } from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { JobPostingSearchService } from '../../../jobs/domain/services/job-posting-search.service';
 import { SourceRegistryService } from '../../../source-registry/source-registry.service';
 import { GetOpportunityBoardUseCase } from './get-opportunity-board.use-case';
 
 describe('GetOpportunityBoardUseCase', () => {
+  const jobPostingSnapshotReaderService = {
+    getResolvedAllJobs: jest.fn(),
+  };
   const jobPostingCacheRepository = {
-    getAllJobs: jest.fn(),
     getJobChangeSignals: jest.fn(),
   } as unknown as Pick<
     JobPostingCacheRepository,
-    'getAllJobs' | 'getJobChangeSignals'
+    'getJobChangeSignals'
   >;
   const sourceRegistryService = {
     list: jest.fn(() => [
@@ -43,6 +46,10 @@ describe('GetOpportunityBoardUseCase', () => {
           useValue: jobPostingCacheRepository,
         },
         {
+          provide: JobPostingSnapshotReaderService,
+          useValue: jobPostingSnapshotReaderService,
+        },
+        {
           provide: SourceRegistryService,
           useValue: sourceRegistryService,
         },
@@ -58,7 +65,7 @@ describe('GetOpportunityBoardUseCase', () => {
     const later = new Date();
     later.setDate(later.getDate() + 12);
 
-    (jobPostingCacheRepository.getAllJobs as jest.Mock).mockResolvedValue({
+    jobPostingSnapshotReaderService.getResolvedAllJobs.mockResolvedValue({
       jobs: [
         {
           id: 'naver-backend',
@@ -157,5 +164,6 @@ describe('GetOpportunityBoardUseCase', () => {
         }),
       }),
     );
+    expect(jobPostingSnapshotReaderService.getResolvedAllJobs).toHaveBeenCalled();
   });
 });

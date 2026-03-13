@@ -6,11 +6,16 @@ import {
   SourceRegistryResponseDto,
 } from './dto/source-registry-response.dto';
 import { SourceRegistryService } from './source-registry.service';
+import { GetSourceHealthUseCase } from './application/use-cases/get-source-health.use-case';
+import { SourceHealthResponseDto } from './dto/source-health.response.dto';
 
 @ApiTags('sources')
 @Controller('sources')
 export class SourceRegistryController {
-  constructor(private readonly sourceRegistryService: SourceRegistryService) {}
+  constructor(
+    private readonly sourceRegistryService: SourceRegistryService,
+    private readonly getSourceHealthUseCase: GetSourceHealthUseCase,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -29,5 +34,18 @@ export class SourceRegistryController {
     );
 
     return { sources };
+  }
+
+  @Get('health')
+  @ApiOperation({
+    summary: '운영용 source health/status 조회',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'source별 운영 상태와 마지막 성공 시각',
+    type: SourceHealthResponseDto,
+  })
+  async getSourceHealth(): Promise<SourceHealthResponseDto> {
+    return this.getSourceHealthUseCase.execute();
   }
 }

@@ -1,13 +1,13 @@
 import { Test } from '@nestjs/testing';
-import { JOB_POSTING_CACHE_REPOSITORY } from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { COMPANY_ENUM, EMPLOYMENT_TYPE, CAREER_TYPE, LOCATION_TYPE } from '../../../jobs/constants/job-codes.constant';
 import { GetSkillMapUseCase } from './get-skill-map.use-case';
 import { SkillMapBuilderService } from '../../domain/services/skill-map-builder.service';
 import { SkillNameNormalizerService } from '../../domain/services/skill-name-normalizer.service';
 
 describe('GetSkillMapUseCase', () => {
-  const jobPostingCacheRepository = {
-    getAllJobs: jest.fn(),
+  const jobPostingSnapshotReaderService = {
+    getResolvedAllJobs: jest.fn(),
   };
 
   let useCase: GetSkillMapUseCase;
@@ -21,8 +21,8 @@ describe('GetSkillMapUseCase', () => {
         SkillMapBuilderService,
         SkillNameNormalizerService,
         {
-          provide: JOB_POSTING_CACHE_REPOSITORY,
-          useValue: jobPostingCacheRepository,
+          provide: JobPostingSnapshotReaderService,
+          useValue: jobPostingSnapshotReaderService,
         },
       ],
     }).compile();
@@ -31,7 +31,7 @@ describe('GetSkillMapUseCase', () => {
   });
 
   it('builds a deterministic skill map from cached jobs', async () => {
-    jobPostingCacheRepository.getAllJobs.mockResolvedValue({
+    jobPostingSnapshotReaderService.getResolvedAllJobs.mockResolvedValue({
       jobs: [
         {
           id: 'job-1',
@@ -135,5 +135,6 @@ describe('GetSkillMapUseCase', () => {
         companies: [COMPANY_ENUM.KAKAO, COMPANY_ENUM.LINE],
       }),
     );
+    expect(jobPostingSnapshotReaderService.getResolvedAllJobs).toHaveBeenCalled();
   });
 });

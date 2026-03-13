@@ -19,6 +19,8 @@ import { ResearchModule } from './modules/research/research.module';
 import { OpportunityIntelligenceModule } from './modules/opportunity-intelligence/opportunity-intelligence.module';
 import { MarketIntelligenceModule } from './modules/market-intelligence/market-intelligence.module';
 import { WatchlistPreviewModule } from './modules/watchlist-preview/watchlist-preview.module';
+import { InstitutionIntelligenceModule } from './modules/institution-intelligence/institution-intelligence.module';
+import { ContentIntelligenceModule } from './modules/content-intelligence/content-intelligence.module';
 
 // KST 시간대 설정
 process.env.TZ = 'Asia/Seoul';
@@ -46,6 +48,8 @@ process.env.TZ = 'Asia/Seoul';
     OpportunityIntelligenceModule,
     MarketIntelligenceModule,
     WatchlistPreviewModule,
+    InstitutionIntelligenceModule,
+    ContentIntelligenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

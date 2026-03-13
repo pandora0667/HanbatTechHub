@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   // 환경변수에 따른 로그 레벨 설정
@@ -46,6 +47,7 @@ async function bootstrap() {
       forbidNonWhitelisted: false, // 비활성화하여 정의되지 않은 속성 허용
     }),
   );
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // CORS 설정
   app.enableCors();

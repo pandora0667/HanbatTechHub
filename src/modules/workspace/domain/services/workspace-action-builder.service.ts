@@ -118,9 +118,10 @@ export class WorkspaceActionBuilderService {
     const deduped = new Map<string, WorkspaceActionItem>();
 
     for (const item of items) {
-      const existing = deduped.get(item.id);
+      const key = this.resolveDeduplicationKey(item);
+      const existing = deduped.get(key);
       if (!existing || this.score(item) > this.score(existing)) {
-        deduped.set(item.id, item);
+        deduped.set(key, item);
       }
     }
 
@@ -173,5 +174,13 @@ export class WorkspaceActionBuilderService {
     }[item.type];
 
     return priorityScore + typeScore;
+  }
+
+  private resolveDeduplicationKey(item: WorkspaceActionItem): string {
+    if (item.url) {
+      return `${item.sourceKind}:${item.url}`;
+    }
+
+    return item.id;
   }
 }

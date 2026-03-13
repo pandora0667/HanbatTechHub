@@ -1,8 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
-import {
-  JOB_POSTING_CACHE_REPOSITORY,
-  JobPostingCacheRepository,
-} from '../../../jobs/application/ports/job-posting-cache.repository';
+import { Injectable } from '@nestjs/common';
+import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { OpportunitySignalBuilderService } from '../../domain/services/opportunity-signal-builder.service';
 import { OpportunitySignalResult } from '../../domain/models/opportunity-signal.model';
 import { CompanyType } from '../../../jobs/interfaces/job-posting.interface';
@@ -16,22 +13,23 @@ export interface GetUpcomingOpportunitySignalsQuery {
 @Injectable()
 export class GetUpcomingOpportunitySignalsUseCase {
   constructor(
-    @Inject(JOB_POSTING_CACHE_REPOSITORY)
-    private readonly jobPostingCacheRepository: JobPostingCacheRepository,
+    private readonly jobPostingSnapshotReaderService: JobPostingSnapshotReaderService,
     private readonly opportunitySignalBuilderService: OpportunitySignalBuilderService,
   ) {}
 
   async execute(
     query: GetUpcomingOpportunitySignalsQuery = {},
   ): Promise<OpportunitySignalResult> {
-    const allJobs = await this.jobPostingCacheRepository.getAllJobs();
-    const filteredJobs = query.company
-      ? (allJobs?.jobs ?? []).filter((job) => job.company === query.company)
-      : (allJobs?.jobs ?? []);
+    const jobsEntry = query.company
+      ? await this.jobPostingSnapshotReaderService.getResolvedCompanyJobs(
+          query.company,
+        )
+      : await this.jobPostingSnapshotReaderService.getResolvedAllJobs();
+    const filteredJobs = jobsEntry?.jobs ?? [];
 
     return this.opportunitySignalBuilderService.buildUpcomingJobDeadlineSignals({
       jobs: filteredJobs,
-      snapshot: allJobs?.snapshot,
+      snapshot: jobsEntry?.snapshot,
       windowDays: query.days ?? 7,
       limit: query.limit ?? 10,
     });
