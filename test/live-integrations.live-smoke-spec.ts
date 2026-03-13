@@ -53,6 +53,16 @@ import { KakaoCrawler } from '../src/modules/jobs/crawlers/kakao.crawler';
 import { LineCrawler } from '../src/modules/jobs/crawlers/line.crawler';
 import { CoupangCrawler } from '../src/modules/jobs/crawlers/coupang.crawler';
 import { JobPosting } from '../src/modules/jobs/interfaces/job-posting.interface';
+import { SignalsService } from '../src/modules/signals/signals.service';
+import { SignalsController } from '../src/modules/signals/signals.controller';
+import { SourceFreshnessEvaluatorService } from '../src/modules/signals/domain/services/source-freshness-evaluator.service';
+import { OpportunitySignalBuilderService } from '../src/modules/signals/domain/services/opportunity-signal-builder.service';
+import { SourceLastUpdateResolverService } from '../src/modules/signals/application/services/source-last-update-resolver.service';
+import { GetSourceFreshnessSignalsUseCase } from '../src/modules/signals/application/use-cases/get-source-freshness-signals.use-case';
+import { GetUpcomingOpportunitySignalsUseCase } from '../src/modules/signals/application/use-cases/get-upcoming-opportunity-signals.use-case';
+import { SourceRegistryService } from '../src/modules/source-registry/source-registry.service';
+import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
+import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -115,6 +125,7 @@ describeLive('Live Integration Smoke', () => {
   let menuService: MenuService;
   let noticeService: NoticeService;
   let blogService: BlogService;
+  let signalsService: SignalsService;
   let redisService: InMemoryRedisService;
 
   beforeAll(async () => {
@@ -181,6 +192,19 @@ describeLive('Live Integration Smoke', () => {
           provide: BLOG_SOURCE_CATALOG,
           useExisting: BlogSourceCatalogService,
         },
+        RedisJobPostingCacheRepository,
+        {
+          provide: JOB_POSTING_CACHE_REPOSITORY,
+          useExisting: RedisJobPostingCacheRepository,
+        },
+        SignalsController,
+        SignalsService,
+        SourceFreshnessEvaluatorService,
+        OpportunitySignalBuilderService,
+        SourceLastUpdateResolverService,
+        GetSourceFreshnessSignalsUseCase,
+        GetUpcomingOpportunitySignalsUseCase,
+        SourceRegistryService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -189,6 +213,7 @@ describeLive('Live Integration Smoke', () => {
     menuService = moduleRef.get(MenuService);
     noticeService = moduleRef.get(NoticeService);
     blogService = moduleRef.get(BlogService);
+    signalsService = moduleRef.get(SignalsService);
     redisService = moduleRef.get(RedisService);
   });
 
@@ -290,6 +315,28 @@ describeLive('Live Integration Smoke', () => {
     }
 
     expect(results.some(({ jobs }) => jobs.length > 0)).toBe(true);
+  });
+
+  it('builds freshness signals from live snapshots', async () => {
+    await menuService.getWeeklyMenu();
+    await noticeService.getNotices(1, 5);
+    await blogService.getAllPosts(1, 5);
+
+    const response = await signalsService.getSourceFreshnessSignals({
+      context: 'institution',
+    });
+
+    expect(response.summary.total).toBeGreaterThan(0);
+    expect(response.signals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: 'institution.hanbat.menu',
+        }),
+        expect.objectContaining({
+          sourceId: 'institution.hanbat.notice',
+        }),
+      ]),
+    );
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(

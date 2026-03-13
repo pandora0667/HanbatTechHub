@@ -44,5 +44,6 @@ import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper'
       useExisting: BlogSourceCatalogService,
     },
   ],
+  exports: [BlogService, BLOG_POST_REPOSITORY],
 })
 export class BlogModule {}

@@ -5,6 +5,17 @@ export const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+export const getMondayDate = (date: Date): Date => {
+  const monday = new Date(date);
+  const day = monday.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+
+  monday.setDate(monday.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+
+  return monday;
+};
+
 export const isToday = (dateStr: string): boolean => {
   const today = formatDate(new Date());
   return dateStr === today;

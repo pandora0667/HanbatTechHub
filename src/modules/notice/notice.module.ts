@@ -43,6 +43,6 @@ import { NoticeResponseMapper } from './presentation/mappers/notice-response.map
       useExisting: HanbatNoticeSourceGateway,
     },
   ],
-  exports: [NoticeService],
+  exports: [NoticeService, NOTICE_CACHE_REPOSITORY],
 })
 export class NoticeModule {}

@@ -5,6 +5,44 @@ import { globalAgent as httpsGlobalAgent } from 'https';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { RedisService } from '../src/modules/redis/redis.service';
+
+class InMemoryRedisService {
+  private readonly store = new Map<string, string>();
+
+  async get<T>(key: string): Promise<T | null> {
+    const value = this.store.get(key);
+    return value ? (JSON.parse(value) as T) : null;
+  }
+
+  async set(key: string, value: unknown): Promise<void> {
+    this.store.set(key, JSON.stringify(value));
+  }
+
+  async del(key: string): Promise<void> {
+    this.store.delete(key);
+  }
+
+  async flushAll(): Promise<void> {
+    this.store.clear();
+  }
+
+  async flushByPattern(pattern: string): Promise<void> {
+    const prefix = pattern.replace(/\*$/, '');
+    for (const key of this.store.keys()) {
+      if (key.startsWith(prefix)) {
+        this.store.delete(key);
+      }
+    }
+  }
+
+  async initializeServiceCache(serviceName: string): Promise<void> {
+    const pattern = serviceName.endsWith(':*')
+      ? serviceName
+      : `${serviceName}:*`;
+    await this.flushByPattern(pattern);
+  }
+}
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -17,7 +55,10 @@ describe('AppController (e2e)', () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(RedisService)
+      .useValue(new InMemoryRedisService())
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -65,5 +106,21 @@ describe('AppController (e2e)', () => {
         (source: { context: string }) => source.context === 'opportunity',
       ),
     ).toBe(true);
+  });
+
+  it('/api/v1/signals/freshness (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/signals/freshness')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          total: expect.any(Number),
+        }),
+        signals: expect.any(Array),
+      }),
+    );
   });
 });

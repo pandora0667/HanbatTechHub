@@ -45,6 +45,6 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     },
     ...CRAWLER_PROVIDERS,
   ],
-  exports: [JobsService],
+  exports: [JobsService, JOB_POSTING_CACHE_REPOSITORY],
 })
 export class JobsModule {}

@@ -91,7 +91,7 @@ export class RedisJobPostingCacheRepository
       const lastUpdate = await this.getLastUpdate();
 
       return {
-        jobs: value,
+        jobs: this.hydrateJobs(value),
         snapshot: buildSnapshotMetadata({
           collectedAt: lastUpdate ?? new Date(),
           ttlSeconds: JOBS_CACHE_TTL,
@@ -101,6 +101,21 @@ export class RedisJobPostingCacheRepository
       };
     }
 
-    return value;
+    return {
+      ...value,
+      jobs: this.hydrateJobs(value.jobs),
+    };
+  }
+
+  private hydrateJobs(jobs: JobPosting[]): JobPosting[] {
+    return jobs.map((job) => ({
+      ...job,
+      period: {
+        start: new Date(job.period.start),
+        end: new Date(job.period.end),
+      },
+      createdAt: new Date(job.createdAt),
+      updatedAt: new Date(job.updatedAt),
+    }));
   }
 }
