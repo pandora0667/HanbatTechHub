@@ -352,4 +352,67 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/market/overview (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/market/overview')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalOpenOpportunities: expect.any(Number),
+          companiesHiring: expect.any(Number),
+          fieldsTracked: expect.any(Number),
+          skillsTracked: expect.any(Number),
+          newSignals: expect.any(Number),
+          updatedSignals: expect.any(Number),
+          closingSoonOpportunities: expect.any(Number),
+          freshSources: expect.any(Number),
+          staleSources: expect.any(Number),
+          missingSources: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          topCompanies: expect.any(Array),
+          topSkills: expect.any(Array),
+          topFields: expect.any(Array),
+          staleSources: expect.any(Array),
+        }),
+        sources: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/watchlist/preview (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/watchlist/preview?companies=NAVER&skills=TypeScript')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          companiesTracked: 1,
+          skillsTracked: 1,
+          matchedOpportunities: expect.any(Number),
+          matchedContent: expect.any(Number),
+          changeSignals: expect.any(Number),
+          deadlineSignals: expect.any(Number),
+        }),
+        meta: expect.objectContaining({
+          companies: ['NAVER'],
+          skills: ['TypeScript'],
+        }),
+        sections: expect.objectContaining({
+          companies: expect.any(Array),
+          opportunities: expect.any(Array),
+          content: expect.any(Array),
+          recentChanges: expect.any(Array),
+          upcomingDeadlines: expect.any(Array),
+        }),
+        sources: expect.any(Array),
+      }),
+    );
+  });
 });

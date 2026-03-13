@@ -91,6 +91,12 @@ import { GetCompanyResearchUseCase } from '../src/modules/research/application/u
 import { CompanyResearchBuilderService } from '../src/modules/research/domain/services/company-research-builder.service';
 import { OpportunityIntelligenceService } from '../src/modules/opportunity-intelligence/opportunity-intelligence.service';
 import { GetOpportunityBoardUseCase } from '../src/modules/opportunity-intelligence/application/use-cases/get-opportunity-board.use-case';
+import { MarketIntelligenceService } from '../src/modules/market-intelligence/market-intelligence.service';
+import { GetMarketOverviewUseCase } from '../src/modules/market-intelligence/application/use-cases/get-market-overview.use-case';
+import { MarketOverviewBuilderService } from '../src/modules/market-intelligence/domain/services/market-overview-builder.service';
+import { WatchlistPreviewService } from '../src/modules/watchlist-preview/watchlist-preview.service';
+import { GetWatchlistPreviewUseCase } from '../src/modules/watchlist-preview/application/use-cases/get-watchlist-preview.use-case';
+import { WatchlistPreviewMatcherService } from '../src/modules/watchlist-preview/domain/services/watchlist-preview-matcher.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -160,6 +166,8 @@ describeLive('Live Integration Smoke', () => {
   let compareService: CompareService;
   let researchService: ResearchService;
   let opportunityIntelligenceService: OpportunityIntelligenceService;
+  let marketIntelligenceService: MarketIntelligenceService;
+  let watchlistPreviewService: WatchlistPreviewService;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -265,6 +273,12 @@ describeLive('Live Integration Smoke', () => {
         CompanyResearchBuilderService,
         OpportunityIntelligenceService,
         GetOpportunityBoardUseCase,
+        MarketIntelligenceService,
+        GetMarketOverviewUseCase,
+        MarketOverviewBuilderService,
+        WatchlistPreviewService,
+        GetWatchlistPreviewUseCase,
+        WatchlistPreviewMatcherService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -282,6 +296,8 @@ describeLive('Live Integration Smoke', () => {
     opportunityIntelligenceService = moduleRef.get(
       OpportunityIntelligenceService,
     );
+    marketIntelligenceService = moduleRef.get(MarketIntelligenceService);
+    watchlistPreviewService = moduleRef.get(WatchlistPreviewService);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -741,6 +757,86 @@ describeLive('Live Integration Smoke', () => {
         }),
       }),
     );
+  });
+
+  it('builds a live market overview from cached snapshots only', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const jobs = [
+      ...(await new NaverCrawler(httpClient, configService).fetchJobs()),
+      ...(await new KakaoCrawler(httpClient, configService).fetchJobs()),
+    ];
+
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: 0.8,
+        sourceIds: [
+          getJobSourceDescriptor('NAVER').id,
+          getJobSourceDescriptor('KAKAO').id,
+        ],
+      }),
+    });
+
+    const response = await marketIntelligenceService.getOverview({
+      topCompanyLimit: 5,
+      topSkillLimit: 10,
+      topFieldLimit: 8,
+      staleSourceLimit: 5,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.summary.totalOpenOpportunities).toBeGreaterThan(0);
+    expect(response.sections.topCompanies).toEqual(expect.any(Array));
+    expect(response.sections.topSkills).toEqual(expect.any(Array));
+    expect(response.sections.topFields).toEqual(expect.any(Array));
+  });
+
+  it('builds a live watchlist preview from cached snapshots only', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const jobs = await new NaverCrawler(httpClient, configService).fetchJobs();
+
+    await jobPostingCacheRepository.setCompanyJobs('NAVER', {
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('NAVER').confidence,
+        sourceIds: [getJobSourceDescriptor('NAVER').id],
+      }),
+    });
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('NAVER').confidence,
+        sourceIds: [getJobSourceDescriptor('NAVER').id],
+      }),
+    });
+    await blogService.getCompanyPosts('NAVER_D2', 1, 3);
+
+    const response = await watchlistPreviewService.getPreview({
+      companies: ['NAVER'],
+      skills: ['TypeScript'],
+      companyLimit: 3,
+      opportunityLimit: 10,
+      contentLimit: 6,
+      signalLimit: 6,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.summary.companiesTracked).toBe(1);
+    expect(response.sections.companies).toEqual(expect.any(Array));
+    expect(response.sections.opportunities).toEqual(expect.any(Array));
+    expect(response.sections.content).toEqual(expect.any(Array));
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
