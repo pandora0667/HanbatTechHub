@@ -248,4 +248,32 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/workspace/act (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/workspace/act')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        overview: expect.objectContaining({
+          totalActions: expect.any(Number),
+          urgent: expect.any(Number),
+          high: expect.any(Number),
+          medium: expect.any(Number),
+          low: expect.any(Number),
+          applyNow: expect.any(Number),
+          readNow: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          applyNow: expect.any(Array),
+          reviewChanges: expect.any(Array),
+          institutionChecks: expect.any(Array),
+          readingQueue: expect.any(Array),
+        }),
+        actions: expect.any(Array),
+      }),
+    );
+  });
 });

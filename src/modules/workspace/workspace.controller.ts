@@ -1,6 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { WorkspaceService } from './workspace.service';
+import { GetActWorkspaceQueryDto } from './dto/get-act-workspace-query.dto';
+import { ActWorkspaceResponseDto } from './dto/act-workspace.response.dto';
 import { GetRadarWorkspaceQueryDto } from './dto/get-radar-workspace-query.dto';
 import { GetTodayWorkspaceQueryDto } from './dto/get-today-workspace-query.dto';
 import { RadarWorkspaceResponseDto } from './dto/radar-workspace.response.dto';
@@ -10,6 +12,21 @@ import { TodayWorkspaceResponseDto } from './dto/today-workspace.response.dto';
 @Controller('workspace')
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
+
+  @Get('act')
+  @ApiOperation({
+    summary: '내부 스냅샷 기준 우선순위 액션 뷰 조회',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '지금 해야 할 행동 후보를 우선순위로 정렬한 워크스페이스 뷰',
+    type: ActWorkspaceResponseDto,
+  })
+  async getActWorkspace(
+    @Query() query: GetActWorkspaceQueryDto,
+  ): Promise<ActWorkspaceResponseDto> {
+    return this.workspaceService.getActWorkspace(query);
+  }
 
   @Get('today')
   @ApiOperation({

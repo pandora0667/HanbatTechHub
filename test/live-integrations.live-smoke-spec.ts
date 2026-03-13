@@ -65,10 +65,13 @@ import { SourceRegistryService } from '../src/modules/source-registry/source-reg
 import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
 import { WorkspaceService } from '../src/modules/workspace/workspace.service';
+import { GetActWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-act-workspace.use-case';
 import { GetRadarWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-radar-workspace.use-case';
 import { GetTodayWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-today-workspace.use-case';
+import { ActWorkspaceOverviewService } from '../src/modules/workspace/domain/services/act-workspace-overview.service';
 import { RadarWorkspaceOverviewService } from '../src/modules/workspace/domain/services/radar-workspace-overview.service';
 import { TodayWorkspaceOverviewService } from '../src/modules/workspace/domain/services/today-workspace-overview.service';
+import { WorkspaceActionBuilderService } from '../src/modules/workspace/domain/services/workspace-action-builder.service';
 import { CompanyIntelligenceService } from '../src/modules/company-intelligence/company-intelligence.service';
 import { GetCompanyBriefUseCase } from '../src/modules/company-intelligence/application/use-cases/get-company-brief.use-case';
 import { CompanyBriefOverviewService } from '../src/modules/company-intelligence/domain/services/company-brief-overview.service';
@@ -227,8 +230,11 @@ describeLive('Live Integration Smoke', () => {
         GetOpportunityChangeSignalsUseCase,
         SourceRegistryService,
         WorkspaceService,
+        GetActWorkspaceUseCase,
         GetRadarWorkspaceUseCase,
         GetTodayWorkspaceUseCase,
+        WorkspaceActionBuilderService,
+        ActWorkspaceOverviewService,
         RadarWorkspaceOverviewService,
         TodayWorkspaceOverviewService,
         CompanyIntelligenceService,
@@ -501,8 +507,44 @@ describeLive('Live Integration Smoke', () => {
         companyCount: expect.any(Number),
         companies: expect.any(Array),
         sampleRoles: expect.any(Array),
-      }),
+        }),
     );
+  });
+
+  it('builds a live act workspace view from cached snapshots only', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const jobs = await new KakaoCrawler(httpClient, configService).fetchJobs();
+
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('KAKAO').confidence,
+        sourceIds: [getJobSourceDescriptor('KAKAO').id],
+      }),
+    });
+    await noticeService.getNewNotices();
+    await blogService.getAllPosts(1, 5);
+
+    const response = await workspaceService.getActWorkspace({
+      limit: 10,
+      deadlineLimit: 5,
+      newJobLimit: 5,
+      updatedJobLimit: 3,
+      noticeLimit: 3,
+      contentLimit: 3,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.overview.totalActions).toBeGreaterThan(0);
+    expect(response.sections.applyNow).toEqual(expect.any(Array));
+    expect(response.sections.institutionChecks).toEqual(expect.any(Array));
+    expect(response.sections.readingQueue).toEqual(expect.any(Array));
+    expect(response.actions.length).toBeGreaterThan(0);
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
