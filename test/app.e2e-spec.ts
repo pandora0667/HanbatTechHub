@@ -276,4 +276,26 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/compare/companies (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/compare/companies?companies=NAVER,KAKAO')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        overview: expect.objectContaining({
+          companyCount: 2,
+          totalOpenJobs: expect.any(Number),
+          totalNewJobs: expect.any(Number),
+          totalClosingSoonJobs: expect.any(Number),
+          broadestSkillCoverageCompany: expect.any(String),
+          mostActiveHiringCompany: expect.any(String),
+        }),
+        companies: expect.any(Array),
+      }),
+    );
+    expect(response.body.companies).toHaveLength(2);
+  });
 });

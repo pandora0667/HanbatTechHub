@@ -15,5 +15,6 @@ import { SkillIntelligenceService } from './skill-intelligence.service';
     SkillMapBuilderService,
     SkillNameNormalizerService,
   ],
+  exports: [SkillIntelligenceService],
 })
 export class SkillIntelligenceModule {}

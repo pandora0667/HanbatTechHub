@@ -82,6 +82,9 @@ import { SkillIntelligenceService } from '../src/modules/skill-intelligence/skil
 import { GetSkillMapUseCase } from '../src/modules/skill-intelligence/application/use-cases/get-skill-map.use-case';
 import { SkillMapBuilderService } from '../src/modules/skill-intelligence/domain/services/skill-map-builder.service';
 import { SkillNameNormalizerService } from '../src/modules/skill-intelligence/domain/services/skill-name-normalizer.service';
+import { CompareService } from '../src/modules/compare/compare.service';
+import { GetCompanyCompareUseCase } from '../src/modules/compare/application/use-cases/get-company-compare.use-case';
+import { CompanyCompareOverviewService } from '../src/modules/compare/domain/services/company-compare-overview.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -148,6 +151,7 @@ describeLive('Live Integration Smoke', () => {
   let workspaceService: WorkspaceService;
   let companyIntelligenceService: CompanyIntelligenceService;
   let skillIntelligenceService: SkillIntelligenceService;
+  let compareService: CompareService;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -244,6 +248,9 @@ describeLive('Live Integration Smoke', () => {
         GetSkillMapUseCase,
         SkillMapBuilderService,
         SkillNameNormalizerService,
+        CompareService,
+        GetCompanyCompareUseCase,
+        CompanyCompareOverviewService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -256,6 +263,7 @@ describeLive('Live Integration Smoke', () => {
     workspaceService = moduleRef.get(WorkspaceService);
     companyIntelligenceService = moduleRef.get(CompanyIntelligenceService);
     skillIntelligenceService = moduleRef.get(SkillIntelligenceService);
+    compareService = moduleRef.get(CompareService);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -545,6 +553,80 @@ describeLive('Live Integration Smoke', () => {
     expect(response.sections.institutionChecks).toEqual(expect.any(Array));
     expect(response.sections.readingQueue).toEqual(expect.any(Array));
     expect(response.actions.length).toBeGreaterThan(0);
+  });
+
+  it('builds a live company comparison from cached snapshots only', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const naverJobs = await new NaverCrawler(httpClient, configService).fetchJobs();
+    const kakaoJobs = await new KakaoCrawler(httpClient, configService).fetchJobs();
+    const combinedJobs = [...naverJobs, ...kakaoJobs];
+
+    await jobPostingCacheRepository.setCompanyJobs('NAVER', {
+      jobs: naverJobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('NAVER').confidence,
+        sourceIds: [getJobSourceDescriptor('NAVER').id],
+      }),
+    });
+    await jobPostingCacheRepository.setCompanyJobs('KAKAO', {
+      jobs: kakaoJobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('KAKAO').confidence,
+        sourceIds: [getJobSourceDescriptor('KAKAO').id],
+      }),
+    });
+    await jobPostingCacheRepository.setAllJobs({
+      jobs: combinedJobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: 0.8,
+        sourceIds: [
+          getJobSourceDescriptor('NAVER').id,
+          getJobSourceDescriptor('KAKAO').id,
+        ],
+      }),
+    });
+    await blogService.getCompanyPosts('NAVER_D2', 1, 3);
+    await blogService.getCompanyPosts('KAKAO_ENTERPRISE', 1, 3);
+
+    const response = await compareService.compareCompanies({
+      companies: ['NAVER', 'KAKAO'],
+      jobLimit: 3,
+      contentLimit: 2,
+      changeLimit: 5,
+      deadlineLimit: 3,
+      deadlineWindowDays: 7,
+      skillLimit: 5,
+      minSkillDemand: 1,
+    });
+
+    expect(response.overview.companyCount).toBe(2);
+    expect(response.overview.totalOpenJobs).toBeGreaterThan(0);
+    expect(response.companies).toHaveLength(2);
+    expect(response.companies[0]).toEqual(
+      expect.objectContaining({
+        company: expect.objectContaining({
+          code: expect.any(String),
+          name: expect.any(String),
+          provider: expect.any(String),
+        }),
+        overview: expect.objectContaining({
+          openJobs: expect.any(Number),
+          skillsTracked: expect.any(Number),
+          skillCoverageRatio: expect.any(Number),
+        }),
+        topSkills: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(

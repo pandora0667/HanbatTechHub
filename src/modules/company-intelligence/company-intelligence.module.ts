@@ -16,5 +16,6 @@ import { CompanyBriefOverviewService } from './domain/services/company-brief-ove
     GetCompanyBriefUseCase,
     CompanyBriefOverviewService,
   ],
+  exports: [CompanyIntelligenceService],
 })
 export class CompanyIntelligenceModule {}
