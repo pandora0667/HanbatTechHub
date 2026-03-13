@@ -142,4 +142,31 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/workspace/today (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/workspace/today')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        overview: expect.objectContaining({
+          staleSources: expect.any(Number),
+          missingSources: expect.any(Number),
+          opportunityChanges: expect.any(Number),
+          upcomingOpportunities: expect.any(Number),
+          latestContentItems: expect.any(Number),
+          latestNoticeItems: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          freshness: expect.any(Object),
+          opportunityChanges: expect.any(Object),
+          upcomingOpportunities: expect.any(Object),
+          latestContent: expect.any(Object),
+          latestNotices: expect.any(Object),
+        }),
+      }),
+    );
+  });
 });

@@ -25,5 +25,6 @@ import { GetOpportunityChangeSignalsUseCase } from './application/use-cases/get-
     GetUpcomingOpportunitySignalsUseCase,
     GetOpportunityChangeSignalsUseCase,
   ],
+  exports: [SignalsService],
 })
 export class SignalsModule {}

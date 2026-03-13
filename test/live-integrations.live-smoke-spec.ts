@@ -64,6 +64,9 @@ import { GetOpportunityChangeSignalsUseCase } from '../src/modules/signals/appli
 import { SourceRegistryService } from '../src/modules/source-registry/source-registry.service';
 import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
+import { WorkspaceService } from '../src/modules/workspace/workspace.service';
+import { GetTodayWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-today-workspace.use-case';
+import { TodayWorkspaceOverviewService } from '../src/modules/workspace/domain/services/today-workspace-overview.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -127,6 +130,7 @@ describeLive('Live Integration Smoke', () => {
   let noticeService: NoticeService;
   let blogService: BlogService;
   let signalsService: SignalsService;
+  let workspaceService: WorkspaceService;
   let redisService: InMemoryRedisService;
 
   beforeAll(async () => {
@@ -207,6 +211,9 @@ describeLive('Live Integration Smoke', () => {
         GetUpcomingOpportunitySignalsUseCase,
         GetOpportunityChangeSignalsUseCase,
         SourceRegistryService,
+        WorkspaceService,
+        GetTodayWorkspaceUseCase,
+        TodayWorkspaceOverviewService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -216,6 +223,7 @@ describeLive('Live Integration Smoke', () => {
     noticeService = moduleRef.get(NoticeService);
     blogService = moduleRef.get(BlogService);
     signalsService = moduleRef.get(SignalsService);
+    workspaceService = moduleRef.get(WorkspaceService);
     redisService = moduleRef.get(RedisService);
   });
 
@@ -339,6 +347,26 @@ describeLive('Live Integration Smoke', () => {
         }),
       ]),
     );
+  });
+
+  it('builds a live today workspace view from cached snapshots', async () => {
+    await menuService.getWeeklyMenu();
+    await noticeService.getNotices(1, 5);
+    await blogService.getAllPosts(1, 5);
+
+    const response = await workspaceService.getTodayWorkspace({
+      contentLimit: 3,
+      noticeLimit: 3,
+      changeLimit: 5,
+      deadlineLimit: 5,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.overview.latestContentItems).toBeGreaterThan(0);
+    expect(response.overview.latestNoticeItems).toBeGreaterThan(0);
+    expect(response.sections.latestContent.items.length).toBeGreaterThan(0);
+    expect(response.sections.latestNotices.items.length).toBeGreaterThan(0);
+    expect(response.sections.freshness.summary.total).toBeGreaterThan(0);
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
