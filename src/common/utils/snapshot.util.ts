@@ -29,6 +29,31 @@ export function isSnapshotStale(
   return new Date(snapshot.staleAt).getTime() <= at.getTime();
 }
 
+export function mergeSnapshotMetadata(
+  snapshots: SnapshotMetadata[],
+): SnapshotMetadata | undefined {
+  if (snapshots.length === 0) {
+    return undefined;
+  }
+
+  const collectedAt = Math.min(
+    ...snapshots.map((snapshot) => new Date(snapshot.collectedAt).getTime()),
+  );
+  const staleAt = Math.min(
+    ...snapshots.map((snapshot) => new Date(snapshot.staleAt).getTime()),
+  );
+
+  return {
+    collectedAt: new Date(collectedAt).toISOString(),
+    staleAt: new Date(staleAt).toISOString(),
+    ttlSeconds: Math.min(...snapshots.map((snapshot) => snapshot.ttlSeconds)),
+    confidence: Math.min(...snapshots.map((snapshot) => snapshot.confidence)),
+    sourceIds: Array.from(
+      new Set(snapshots.flatMap((snapshot) => snapshot.sourceIds)),
+    ).sort(),
+  };
+}
+
 function normalizeDate(input: Date | string): Date {
   const date = input instanceof Date ? input : new Date(input);
 

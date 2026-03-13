@@ -23,6 +23,7 @@ export class NoticeCollectorService {
   ) {}
 
   async collect(): Promise<NoticeGroups> {
+    const collectedAt = new Date().toISOString();
     const html = await this.noticeSourceGateway.fetchNoticeListHtml();
     const notices = this.noticeHtmlParserService.parseList(html);
     const grouped = this.noticeGroupingService.classify(notices);
@@ -32,6 +33,7 @@ export class NoticeCollectorService {
       this.noticeCacheRepository.saveNoticeGroup('featured', grouped.featured),
       this.noticeCacheRepository.saveNoticeGroup('new', grouped.new),
       this.noticeCacheRepository.saveNoticeGroup('today', grouped.today),
+      this.noticeCacheRepository.setLastUpdate(collectedAt),
     ]);
 
     return grouped;

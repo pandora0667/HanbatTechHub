@@ -209,8 +209,14 @@ describeLive('Live Integration Smoke', () => {
   it('fetches a live weekly menu snapshot from Hanbat', async () => {
     const weeklyMenu = await menuService.getWeeklyMenu();
 
-    expect(weeklyMenu).toHaveLength(7);
-    expect(weeklyMenu[0]).toEqual(
+    expect(weeklyMenu.snapshot).toEqual(
+      expect.objectContaining({
+        collectedAt: expect.any(String),
+        sourceIds: ['institution.hanbat.menu'],
+      }),
+    );
+    expect(weeklyMenu.menus).toHaveLength(7);
+    expect(weeklyMenu.menus[0]).toEqual(
       expect.objectContaining({
         date: expect.any(String),
         lunch: expect.any(Array),
@@ -224,6 +230,12 @@ describeLive('Live Integration Smoke', () => {
 
     expect(response.items.length).toBeGreaterThan(0);
     expect(response.meta.totalCount).toBeGreaterThan(0);
+    expect(response.meta.snapshot).toEqual(
+      expect.objectContaining({
+        collectedAt: expect.any(String),
+        sourceIds: ['institution.hanbat.notice'],
+      }),
+    );
     expect(response.items[0]).toEqual(
       expect.objectContaining({
         title: expect.any(String),
@@ -239,6 +251,12 @@ describeLive('Live Integration Smoke', () => {
 
     expect(response.items.length).toBeGreaterThan(0);
     expect(response.meta.totalCount).toBeGreaterThan(0);
+    expect(response.meta.snapshot).toEqual(
+      expect.objectContaining({
+        collectedAt: expect.any(String),
+        sourceIds: expect.arrayContaining([expect.stringMatching(/^content\.blog\./)]),
+      }),
+    );
     expect(response.items[0]).toEqual(
       expect.objectContaining({
         id: expect.any(String),

@@ -17,6 +17,10 @@ describe('GetNoticeGroupUseCase', () => {
     saveNoticeGroup: jest.fn(),
     getNoticeDetail: jest.fn(),
     saveNoticeDetail: jest.fn(),
+    getLastUpdate: jest.fn(),
+    setLastUpdate: jest.fn(),
+    getDetailLastUpdate: jest.fn(),
+    setDetailLastUpdate: jest.fn(),
   };
 
   const noticeCollectorService = {
@@ -45,6 +49,9 @@ describe('GetNoticeGroupUseCase', () => {
 
   it('returns pagination metadata with 0 total pages for empty new notices', async () => {
     noticeCacheRepository.getNoticeGroup.mockResolvedValue(null);
+    noticeCacheRepository.getLastUpdate.mockResolvedValue(
+      '2026-03-13T00:00:00.000Z',
+    );
     noticeCollectorService.collect.mockResolvedValue({
       regular: [],
       featured: [],
@@ -56,5 +63,6 @@ describe('GetNoticeGroupUseCase', () => {
 
     expect(response.meta.totalPages).toBe(0);
     expect(response.items).toEqual([]);
+    expect(response.meta.snapshot?.sourceIds).toEqual(['institution.hanbat.notice']);
   });
 });

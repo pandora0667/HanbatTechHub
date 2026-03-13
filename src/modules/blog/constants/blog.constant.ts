@@ -83,3 +83,8 @@ export const REDIS_KEYS = {
 } as const;
 
 export const DEFAULT_REDIS_TTL = 24 * 60 * 60; // 24 hours
+export const BLOG_SOURCE_CONFIDENCE = 0.9;
+
+export function getBlogSourceId(company: string): string {
+  return `content.blog.${company.toLowerCase()}`;
+}

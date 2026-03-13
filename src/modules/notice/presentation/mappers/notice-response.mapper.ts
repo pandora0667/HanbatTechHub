@@ -5,6 +5,7 @@ import {
 } from '../../dto/notice.dto';
 import { NoticeDetail, NoticeSummary } from '../../domain/models/notice.model';
 import { PaginatedNotices } from '../../domain/types/paginated-notices.type';
+import { NoticeDetailResult } from '../../domain/types/notice-detail-result.type';
 
 @Injectable()
 export class NoticeResponseMapper {
@@ -15,7 +16,9 @@ export class NoticeResponseMapper {
     };
   }
 
-  toDetailResponse(detail: NoticeDetail): NoticeDetailResponseDto {
+  toDetailResponse(result: NoticeDetailResult): NoticeDetailResponseDto {
+    const detail = result.detail;
+
     return {
       no: detail.no,
       title: detail.title,
@@ -27,6 +30,7 @@ export class NoticeResponseMapper {
         name: attachment.name,
         link: attachment.link,
       })),
+      snapshot: result.snapshot,
     };
   }
 

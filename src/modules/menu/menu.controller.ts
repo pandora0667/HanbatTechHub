@@ -35,7 +35,6 @@ export class MenuController {
     this.logger.log(
       `주간 식단 정보 요청: 시작 날짜=${menuRequestDto.date || '오늘'}`,
     );
-    const menus = await this.menuService.getWeeklyMenu(menuRequestDto.date);
-    return { menus };
+    return this.menuService.getWeeklyMenu(menuRequestDto.date);
   }
 }

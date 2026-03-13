@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { MenuResponseDto } from './dto/menu.dto';
+import { MenuListResponseDto, MenuResponseDto } from './dto/menu.dto';
 import { MENU_UPDATE_CRON } from './constants/menu.constant';
 import { isBackgroundSyncEnabled } from '../../common/utils/background-sync.util';
 import { GetMenuByDateUseCase } from './application/use-cases/get-menu-by-date.use-case';
@@ -75,7 +75,7 @@ export class MenuService implements OnModuleInit {
    * 한 주 동안의 식단 정보를 가져옵니다.
    * @param startDate 시작 날짜, 지정하지 않으면 오늘 날짜
    */
-  async getWeeklyMenu(startDate?: string): Promise<MenuResponseDto[]> {
+  async getWeeklyMenu(startDate?: string): Promise<MenuListResponseDto> {
     const menus = await this.getWeeklyMenuUseCase.execute(startDate);
     return this.menuResponseMapper.toResponseList(menus);
   }

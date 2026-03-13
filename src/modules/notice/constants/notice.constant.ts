@@ -15,6 +15,8 @@ export const REDIS_KEYS = {
   NOTICE_NEW: 'hbnu:notice:new', // 새로운 공지사항 목록
   NOTICE_TODAY: 'hbnu:notice:today', // 오늘의 공지사항 목록
   NOTICE_DETAIL: 'hbnu:notice:detail:', // 공지사항 상세 정보 (키 뒤에 nttId 붙임)
+  NOTICE_LAST_UPDATE: 'hbnu:notice:last-update',
+  NOTICE_DETAIL_LAST_UPDATE: 'hbnu:notice:detail:last-update:',
 } as const;
 
 // 평일 기준 하루 최대 3회만 안전하게 업데이트
@@ -26,3 +28,5 @@ export const NOTICE_CACHE_TTL = 60 * 60;
 
 // 공지사항 상세 정보 캐시 유효기간 (24시간)
 export const NOTICE_DETAIL_CACHE_TTL = 24 * 60 * 60;
+export const NOTICE_SOURCE_ID = 'institution.hanbat.notice';
+export const NOTICE_SOURCE_CONFIDENCE = 0.8;

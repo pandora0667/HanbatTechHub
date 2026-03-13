@@ -1,4 +1,8 @@
-import { buildSnapshotMetadata, isSnapshotStale } from './snapshot.util';
+import {
+  buildSnapshotMetadata,
+  isSnapshotStale,
+  mergeSnapshotMetadata,
+} from './snapshot.util';
 
 describe('snapshot.util', () => {
   it('builds snapshot metadata with deduplicated source ids and stale time', () => {
@@ -32,5 +36,30 @@ describe('snapshot.util', () => {
     expect(isSnapshotStale(snapshot, new Date('2026-03-13T00:01:00.000Z'))).toBe(
       true,
     );
+  });
+
+  it('merges multiple snapshots conservatively', () => {
+    const merged = mergeSnapshotMetadata([
+      buildSnapshotMetadata({
+        collectedAt: '2026-03-13T01:00:00.000Z',
+        ttlSeconds: 3600,
+        confidence: 0.9,
+        sourceIds: ['content.blog.toss'],
+      }),
+      buildSnapshotMetadata({
+        collectedAt: '2026-03-13T00:00:00.000Z',
+        ttlSeconds: 1800,
+        confidence: 0.75,
+        sourceIds: ['content.blog.line'],
+      }),
+    ]);
+
+    expect(merged).toEqual({
+      collectedAt: '2026-03-13T00:00:00.000Z',
+      staleAt: '2026-03-13T00:30:00.000Z',
+      ttlSeconds: 1800,
+      confidence: 0.75,
+      sourceIds: ['content.blog.line', 'content.blog.toss'],
+    });
   });
 });

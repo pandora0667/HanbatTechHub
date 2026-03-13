@@ -36,4 +36,35 @@ export class RedisMenuRepository implements MenuCacheRepository {
       MENU_CACHE_TTL,
     );
   }
+
+  async getMenuLastUpdate(date: string): Promise<string | null> {
+    return this.redisService.get<string>(
+      appendRedisKey(REDIS_KEYS.MENU_DATE_LAST_UPDATE, date),
+    );
+  }
+
+  async setMenuLastUpdate(date: string, timestamp: string): Promise<void> {
+    await this.redisService.set(
+      appendRedisKey(REDIS_KEYS.MENU_DATE_LAST_UPDATE, date),
+      timestamp,
+      MENU_CACHE_TTL,
+    );
+  }
+
+  async getWeeklyMenuLastUpdate(mondayDate: string): Promise<string | null> {
+    return this.redisService.get<string>(
+      appendRedisKey(REDIS_KEYS.MENU_WEEKLY_LAST_UPDATE, mondayDate),
+    );
+  }
+
+  async setWeeklyMenuLastUpdate(
+    mondayDate: string,
+    timestamp: string,
+  ): Promise<void> {
+    await this.redisService.set(
+      appendRedisKey(REDIS_KEYS.MENU_WEEKLY_LAST_UPDATE, mondayDate),
+      timestamp,
+      MENU_CACHE_TTL,
+    );
+  }
 }

@@ -62,6 +62,32 @@ export class RedisNoticeCacheRepository implements NoticeCacheRepository {
     );
   }
 
+  async getLastUpdate(): Promise<string | null> {
+    return this.redisService.get<string>(REDIS_KEYS.NOTICE_LAST_UPDATE);
+  }
+
+  async setLastUpdate(timestamp: string): Promise<void> {
+    await this.redisService.set(
+      REDIS_KEYS.NOTICE_LAST_UPDATE,
+      timestamp,
+      NOTICE_CACHE_TTL,
+    );
+  }
+
+  async getDetailLastUpdate(nttId: string): Promise<string | null> {
+    return this.redisService.get<string>(
+      appendRedisKey(REDIS_KEYS.NOTICE_DETAIL_LAST_UPDATE, nttId),
+    );
+  }
+
+  async setDetailLastUpdate(nttId: string, timestamp: string): Promise<void> {
+    await this.redisService.set(
+      appendRedisKey(REDIS_KEYS.NOTICE_DETAIL_LAST_UPDATE, nttId),
+      timestamp,
+      NOTICE_DETAIL_CACHE_TTL,
+    );
+  }
+
   private getGroupKey(group: NoticeGroupType): string {
     switch (group) {
       case 'featured':

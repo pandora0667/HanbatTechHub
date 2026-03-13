@@ -1,18 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { DailyMenu } from '../../domain/models/menu.model';
-import { MenuResponseDto } from '../../dto/menu.dto';
+import { MenuQueryResult, WeeklyMenuQueryResult } from '../../domain/types/menu-query-result.type';
+import { MenuListResponseDto, MenuResponseDto } from '../../dto/menu.dto';
 
 @Injectable()
 export class MenuResponseMapper {
-  toResponse(menu: DailyMenu): MenuResponseDto {
+  toResponse(result: MenuQueryResult): MenuResponseDto {
     return {
-      date: menu.date,
-      lunch: [...menu.lunch],
-      dinner: [...menu.dinner],
+      date: result.menu.date,
+      lunch: [...result.menu.lunch],
+      dinner: [...result.menu.dinner],
+      snapshot: result.snapshot,
     };
   }
 
-  toResponseList(menus: DailyMenu[]): MenuResponseDto[] {
-    return menus.map((menu) => this.toResponse(menu));
+  toResponseList(result: WeeklyMenuQueryResult): MenuListResponseDto {
+    return {
+      menus: result.menus.map((menu) => ({
+        date: menu.date,
+        lunch: [...menu.lunch],
+        dinner: [...menu.dinner],
+      })),
+      snapshot: result.snapshot,
+    };
   }
 }

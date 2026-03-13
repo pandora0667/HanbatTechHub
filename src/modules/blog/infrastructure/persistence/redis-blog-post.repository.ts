@@ -43,6 +43,12 @@ export class RedisBlogPostRepository implements BlogPostRepository {
     await this.redisService.set(companyKey, redisPosts, DEFAULT_REDIS_TTL);
   }
 
+  async getCompanyLastUpdate(company: string): Promise<string | null> {
+    return this.redisService.get<string>(
+      appendRedisKey(REDIS_KEYS.BLOG_LAST_UPDATE, company),
+    );
+  }
+
   async setCompanyLastUpdate(
     company: string,
     timestamp: string,

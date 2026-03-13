@@ -14,6 +14,10 @@ describe('UpdateMenuCacheUseCase', () => {
     setMenuByDate: jest.fn(),
     getWeeklyMenu: jest.fn(),
     setWeeklyMenu: jest.fn(),
+    getMenuLastUpdate: jest.fn(),
+    setMenuLastUpdate: jest.fn(),
+    getWeeklyMenuLastUpdate: jest.fn(),
+    setWeeklyMenuLastUpdate: jest.fn(),
   };
 
   const menuLoaderService = {
@@ -56,6 +60,7 @@ describe('UpdateMenuCacheUseCase', () => {
       '2025-03-10',
       weeklyMenu,
     );
+    expect(menuCacheRepository.setWeeklyMenuLastUpdate).toHaveBeenCalled();
     expect(menuCacheRepository.setMenuByDate).toHaveBeenNthCalledWith(
       1,
       '2025-03-10',
@@ -65,6 +70,16 @@ describe('UpdateMenuCacheUseCase', () => {
       2,
       '2025-03-11',
       weeklyMenu[1],
+    );
+    expect(menuCacheRepository.setMenuLastUpdate).toHaveBeenNthCalledWith(
+      1,
+      '2025-03-10',
+      expect.any(String),
+    );
+    expect(menuCacheRepository.setMenuLastUpdate).toHaveBeenNthCalledWith(
+      2,
+      '2025-03-11',
+      expect.any(String),
     );
   });
 });

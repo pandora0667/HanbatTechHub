@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { SnapshotDto } from '../../../common/dto/snapshot.dto';
 
 export class PaginationMetaDto {
   @ApiProperty({ description: '전체 아이템 수' })
@@ -15,6 +16,13 @@ export class PaginationMetaDto {
 
   @ApiProperty({ description: '이전 페이지 존재 여부' })
   readonly hasPreviousPage: boolean;
+
+  @ApiProperty({
+    description: '응답을 구성한 내부 스냅샷 메타데이터',
+    type: SnapshotDto,
+    required: false,
+  })
+  readonly snapshot?: SnapshotDto;
 }
 
 /**
@@ -99,4 +107,11 @@ export class NoticeDetailResponseDto {
 
   @ApiProperty({ description: '첨부파일 목록', type: [AttachmentDto] })
   readonly attachments: AttachmentDto[];
+
+  @ApiProperty({
+    description: '상세 응답을 구성한 내부 스냅샷 메타데이터',
+    type: SnapshotDto,
+    required: false,
+  })
+  readonly snapshot?: SnapshotDto;
 }

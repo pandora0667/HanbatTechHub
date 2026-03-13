@@ -14,4 +14,8 @@ export interface NoticeCacheRepository {
   ): Promise<void>;
   getNoticeDetail(nttId: string): Promise<NoticeDetail | null>;
   saveNoticeDetail(nttId: string, detail: NoticeDetail): Promise<void>;
+  getLastUpdate(): Promise<string | null>;
+  setLastUpdate(timestamp: string): Promise<void>;
+  getDetailLastUpdate(nttId: string): Promise<string | null>;
+  setDetailLastUpdate(nttId: string, timestamp: string): Promise<void>;
 }

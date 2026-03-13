@@ -6,5 +6,6 @@ export interface BlogPostRepository {
   getCompanyPosts(company: string): Promise<BlogPost[]>;
   getPostsForCompanies(companies: string[]): Promise<BlogPost[]>;
   saveCompanyPosts(company: string, posts: BlogPost[]): Promise<void>;
+  getCompanyLastUpdate(company: string): Promise<string | null>;
   setCompanyLastUpdate(company: string, timestamp: string): Promise<void>;
 }
