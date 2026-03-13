@@ -48,6 +48,7 @@ import { BlogResponseMapper } from '../src/modules/blog/presentation/mappers/blo
 import { TranslationService } from '../src/modules/translation/services/translation.service';
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpClientUtil } from '../src/modules/jobs/utils/http-client.util';
+import { JobPostingSearchService } from '../src/modules/jobs/domain/services/job-posting-search.service';
 import { NaverCrawler } from '../src/modules/jobs/crawlers/naver.crawler';
 import { KakaoCrawler } from '../src/modules/jobs/crawlers/kakao.crawler';
 import { LineCrawler } from '../src/modules/jobs/crawlers/line.crawler';
@@ -88,6 +89,8 @@ import { CompanyCompareOverviewService } from '../src/modules/compare/domain/ser
 import { ResearchService } from '../src/modules/research/research.service';
 import { GetCompanyResearchUseCase } from '../src/modules/research/application/use-cases/get-company-research.use-case';
 import { CompanyResearchBuilderService } from '../src/modules/research/domain/services/company-research-builder.service';
+import { OpportunityIntelligenceService } from '../src/modules/opportunity-intelligence/opportunity-intelligence.service';
+import { GetOpportunityBoardUseCase } from '../src/modules/opportunity-intelligence/application/use-cases/get-opportunity-board.use-case';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -156,6 +159,7 @@ describeLive('Live Integration Smoke', () => {
   let skillIntelligenceService: SkillIntelligenceService;
   let compareService: CompareService;
   let researchService: ResearchService;
+  let opportunityIntelligenceService: OpportunityIntelligenceService;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -224,6 +228,7 @@ describeLive('Live Integration Smoke', () => {
           useExisting: BlogSourceCatalogService,
         },
         RedisJobPostingCacheRepository,
+        JobPostingSearchService,
         {
           provide: JOB_POSTING_CACHE_REPOSITORY,
           useExisting: RedisJobPostingCacheRepository,
@@ -258,6 +263,8 @@ describeLive('Live Integration Smoke', () => {
         ResearchService,
         GetCompanyResearchUseCase,
         CompanyResearchBuilderService,
+        OpportunityIntelligenceService,
+        GetOpportunityBoardUseCase,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -272,6 +279,9 @@ describeLive('Live Integration Smoke', () => {
     skillIntelligenceService = moduleRef.get(SkillIntelligenceService);
     compareService = moduleRef.get(CompareService);
     researchService = moduleRef.get(ResearchService);
+    opportunityIntelligenceService = moduleRef.get(
+      OpportunityIntelligenceService,
+    );
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -684,6 +694,53 @@ describeLive('Live Integration Smoke', () => {
     expect(response.insights.length).toBeGreaterThan(0);
     expect(response.actions).toEqual(expect.any(Array));
     expect(response.sources.length).toBeGreaterThan(0);
+  });
+
+  it('builds a live opportunity board from cached snapshots only', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const naverJobs = await new NaverCrawler(httpClient, configService).fetchJobs();
+    const kakaoJobs = await new KakaoCrawler(httpClient, configService).fetchJobs();
+    const jobs = [...naverJobs, ...kakaoJobs];
+
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: 0.8,
+        sourceIds: [
+          getJobSourceDescriptor('NAVER').id,
+          getJobSourceDescriptor('KAKAO').id,
+        ],
+      }),
+    });
+
+    const response = await opportunityIntelligenceService.getOpportunityBoard({
+      sort: 'deadline',
+      deadlineWindowDays: 7,
+      page: 1,
+      limit: 10,
+    });
+
+    expect(response.summary.totalOpenOpportunities).toBeGreaterThan(0);
+    expect(response.summary.companies).toBeGreaterThan(0);
+    expect(response.items.length).toBeGreaterThan(0);
+    expect(response.items[0]).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        company: expect.any(String),
+        title: expect.any(String),
+        signal: expect.objectContaining({
+          isNew: expect.any(Boolean),
+          isUpdated: expect.any(Boolean),
+          closesSoon: expect.any(Boolean),
+          daysRemaining: expect.any(Number),
+        }),
+      }),
+    );
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(

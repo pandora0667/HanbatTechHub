@@ -322,4 +322,34 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/opportunities (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/opportunities?sort=deadline')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalOpenOpportunities: expect.any(Number),
+          companies: expect.any(Number),
+          closingSoon: expect.any(Number),
+          newSignals: expect.any(Number),
+          updatedSignals: expect.any(Number),
+        }),
+        meta: expect.objectContaining({
+          totalCount: expect.any(Number),
+          currentPage: expect.any(Number),
+          totalPages: expect.any(Number),
+          hasNextPage: expect.any(Boolean),
+          hasPreviousPage: expect.any(Boolean),
+          sort: 'deadline',
+          deadlineWindowDays: expect.any(Number),
+        }),
+        items: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
+  });
 });

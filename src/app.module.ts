@@ -16,6 +16,7 @@ import { CompanyIntelligenceModule } from './modules/company-intelligence/compan
 import { SkillIntelligenceModule } from './modules/skill-intelligence/skill-intelligence.module';
 import { CompareModule } from './modules/compare/compare.module';
 import { ResearchModule } from './modules/research/research.module';
+import { OpportunityIntelligenceModule } from './modules/opportunity-intelligence/opportunity-intelligence.module';
 
 // KST 시간대 설정
 process.env.TZ = 'Asia/Seoul';
@@ -40,6 +41,7 @@ process.env.TZ = 'Asia/Seoul';
     SkillIntelligenceModule,
     CompareModule,
     ResearchModule,
+    OpportunityIntelligenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
