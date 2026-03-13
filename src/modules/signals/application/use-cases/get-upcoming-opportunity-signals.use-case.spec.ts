@@ -12,12 +12,15 @@ describe('GetUpcomingOpportunitySignalsUseCase', () => {
 
   const jobPostingCacheRepository: jest.Mocked<JobPostingCacheRepository> = {
     initializeJobsCache: jest.fn(),
+    clearDerivedSearchCaches: jest.fn(),
     getSearchJobs: jest.fn(),
     setSearchJobs: jest.fn(),
     getCompanyJobs: jest.fn(),
     setCompanyJobs: jest.fn(),
     getAllJobs: jest.fn(),
     setAllJobs: jest.fn(),
+    getJobChangeSignals: jest.fn(),
+    setJobChangeSignals: jest.fn(),
     getLastUpdate: jest.fn(),
     setLastUpdate: jest.fn(),
   };

@@ -16,7 +16,7 @@ import { PaginatedResult } from '../../domain/types/paginated-result.type';
 import { JobPostingCollectorService } from '../services/job-posting-collector.service';
 import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
 import { JobPostingCacheEntry } from '../ports/job-posting-cache.repository';
-import { JOBS_CACHE_TTL } from '../../constants/redis.constant';
+import { JOBS_FRESHNESS_TTL } from '../../constants/redis.constant';
 import { getJobSourceDescriptor } from '../../constants/job-source.constant';
 
 @Injectable()
@@ -86,7 +86,7 @@ export class GetTechJobsUseCase {
       jobs,
       snapshot: buildSnapshotMetadata({
         collectedAt: new Date(),
-        ttlSeconds: JOBS_CACHE_TTL,
+        ttlSeconds: JOBS_FRESHNESS_TTL,
         confidence,
         sourceIds,
       }),

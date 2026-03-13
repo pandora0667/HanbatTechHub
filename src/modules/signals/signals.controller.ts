@@ -5,6 +5,8 @@ import { GetSourceFreshnessQueryDto } from './dto/get-source-freshness-query.dto
 import { SourceFreshnessSignalsResponseDto } from './dto/source-freshness-signals.response.dto';
 import { GetUpcomingOpportunitySignalsQueryDto } from './dto/get-upcoming-opportunity-signals-query.dto';
 import { UpcomingOpportunitySignalsResponseDto } from './dto/upcoming-opportunity-signals.response.dto';
+import { GetOpportunityChangeSignalsQueryDto } from './dto/get-opportunity-change-signals-query.dto';
+import { OpportunityChangeSignalsResponseDto } from './dto/opportunity-change-signals.response.dto';
 
 @ApiTags('signals')
 @Controller('signals')
@@ -39,5 +41,20 @@ export class SignalsController {
     @Query() query: GetUpcomingOpportunitySignalsQueryDto,
   ): Promise<UpcomingOpportunitySignalsResponseDto> {
     return this.signalsService.getUpcomingOpportunitySignals(query);
+  }
+
+  @Get('opportunities/changes')
+  @ApiOperation({
+    summary: '채용 신규/수정/삭제 변화 신호 조회',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '채용 변화 신호 목록',
+    type: OpportunityChangeSignalsResponseDto,
+  })
+  async getOpportunityChangeSignals(
+    @Query() query: GetOpportunityChangeSignalsQueryDto,
+  ): Promise<OpportunityChangeSignalsResponseDto> {
+    return this.signalsService.getOpportunityChangeSignals(query);
   }
 }

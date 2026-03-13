@@ -3,6 +3,7 @@ import { JobsService } from './jobs.service';
 import { RedisService } from '../../redis/redis.service';
 import { CRAWLER_TOKEN } from '../crawlers';
 import { JobPostingSearchService } from '../domain/services/job-posting-search.service';
+import { JobPostingChangeDetectorService } from '../domain/services/job-posting-change-detector.service';
 import { JobCrawlerExecutionService } from '../application/services/job-crawler-execution.service';
 import { JobPostingCollectorService } from '../application/services/job-posting-collector.service';
 import { GetCompanyJobsUseCase } from '../application/use-cases/get-company-jobs.use-case';
@@ -29,6 +30,7 @@ describe('JobsService', () => {
     get: jest.fn(),
     set: jest.fn(),
     initializeServiceCache: jest.fn(),
+    flushByPattern: jest.fn(),
   };
 
   const buildJob = (id: string, department = 'Engineering'): JobPosting => ({
@@ -63,6 +65,7 @@ describe('JobsService', () => {
       providers: [
         JobsService,
         JobPostingSearchService,
+        JobPostingChangeDetectorService,
         JobCrawlerExecutionService,
         JobPostingCollectorService,
         GetCompanyJobsUseCase,

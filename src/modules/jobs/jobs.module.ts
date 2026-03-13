@@ -5,6 +5,7 @@ import { JobsService } from './services/jobs.service';
 import { CRAWLER_PROVIDERS } from './crawlers';
 import { HttpClientUtil } from './utils/http-client.util';
 import { JobPostingSearchService } from './domain/services/job-posting-search.service';
+import { JobPostingChangeDetectorService } from './domain/services/job-posting-change-detector.service';
 import { JobCrawlerExecutionService } from './application/services/job-crawler-execution.service';
 import { JobPostingCollectorService } from './application/services/job-posting-collector.service';
 import { GetCompanyJobsUseCase } from './application/use-cases/get-company-jobs.use-case';
@@ -25,6 +26,7 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     JobsService,
     HttpClientUtil,
     JobPostingSearchService,
+    JobPostingChangeDetectorService,
     JobCrawlerExecutionService,
     JobPostingCollectorService,
     GetCompanyJobsUseCase,

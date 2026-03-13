@@ -60,6 +60,7 @@ import { OpportunitySignalBuilderService } from '../src/modules/signals/domain/s
 import { SourceLastUpdateResolverService } from '../src/modules/signals/application/services/source-last-update-resolver.service';
 import { GetSourceFreshnessSignalsUseCase } from '../src/modules/signals/application/use-cases/get-source-freshness-signals.use-case';
 import { GetUpcomingOpportunitySignalsUseCase } from '../src/modules/signals/application/use-cases/get-upcoming-opportunity-signals.use-case';
+import { GetOpportunityChangeSignalsUseCase } from '../src/modules/signals/application/use-cases/get-opportunity-change-signals.use-case';
 import { SourceRegistryService } from '../src/modules/source-registry/source-registry.service';
 import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
@@ -204,6 +205,7 @@ describeLive('Live Integration Smoke', () => {
         SourceLastUpdateResolverService,
         GetSourceFreshnessSignalsUseCase,
         GetUpcomingOpportunitySignalsUseCase,
+        GetOpportunityChangeSignalsUseCase,
         SourceRegistryService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },

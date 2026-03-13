@@ -6,14 +6,33 @@ export const REDIS_KEYS = {
   JOBS_TECH: 'hbnu:jobs:tech', // 기술 직무
   JOBS_COMPANY: 'hbnu:jobs:company:', // 회사별 직무 (접두사)
   JOBS_LAST_UPDATE: 'hbnu:jobs:last-update', // 마지막 업데이트 시간
+  JOBS_CHANGE_SIGNALS: 'hbnu:jobs:signals:changes',
 };
 
 /**
  * Job 캐시 TTL (초)
- * 기본값: 1시간
+ * 기본값: 72시간
  */
 export const JOBS_CACHE_TTL = parseInt(
-  process.env.JOBS_CACHE_TTL || '3600',
+  process.env.JOBS_CACHE_TTL || '259200',
+  10,
+);
+
+/**
+ * Job 스냅샷 freshness TTL (초)
+ * 기본값: 12시간
+ */
+export const JOBS_FRESHNESS_TTL = parseInt(
+  process.env.JOBS_FRESHNESS_TTL || '43200',
+  10,
+);
+
+/**
+ * Job 변화 신호 TTL (초)
+ * 기본값: 7일
+ */
+export const JOBS_CHANGE_SIGNALS_TTL = parseInt(
+  process.env.JOBS_CHANGE_SIGNALS_TTL || '604800',
   10,
 );
 

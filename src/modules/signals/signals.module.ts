@@ -11,6 +11,7 @@ import { OpportunitySignalBuilderService } from './domain/services/opportunity-s
 import { SourceLastUpdateResolverService } from './application/services/source-last-update-resolver.service';
 import { GetSourceFreshnessSignalsUseCase } from './application/use-cases/get-source-freshness-signals.use-case';
 import { GetUpcomingOpportunitySignalsUseCase } from './application/use-cases/get-upcoming-opportunity-signals.use-case';
+import { GetOpportunityChangeSignalsUseCase } from './application/use-cases/get-opportunity-change-signals.use-case';
 
 @Module({
   imports: [SourceRegistryModule, JobsModule, BlogModule, NoticeModule, MenuModule],
@@ -22,6 +23,7 @@ import { GetUpcomingOpportunitySignalsUseCase } from './application/use-cases/ge
     SourceLastUpdateResolverService,
     GetSourceFreshnessSignalsUseCase,
     GetUpcomingOpportunitySignalsUseCase,
+    GetOpportunityChangeSignalsUseCase,
   ],
 })
 export class SignalsModule {}

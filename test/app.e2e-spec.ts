@@ -123,4 +123,23 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/signals/opportunities/changes (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/signals/opportunities/changes')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          total: expect.any(Number),
+          created: expect.any(Number),
+          updated: expect.any(Number),
+          removed: expect.any(Number),
+        }),
+        signals: expect.any(Array),
+      }),
+    );
+  });
 });

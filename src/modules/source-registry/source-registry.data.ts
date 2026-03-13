@@ -1,6 +1,6 @@
 import { SourceRegistryEntry } from '../../common/types/snapshot.types';
 import { TECH_BLOG_RSS, DEFAULT_REDIS_TTL } from '../blog/constants/blog.constant';
-import { JOBS_CACHE_TTL } from '../jobs/constants/redis.constant';
+import { JOBS_FRESHNESS_TTL } from '../jobs/constants/redis.constant';
 import { JOB_SOURCE_DESCRIPTORS } from '../jobs/constants/job-source.constant';
 import { MENU_CACHE_TTL } from '../menu/constants/menu.constant';
 import { HANBAT_NOTICE, NOTICE_CACHE_TTL } from '../notice/constants/notice.constant';
@@ -48,7 +48,7 @@ const JOB_SOURCES: SourceRegistryEntry[] = JOB_SOURCE_DESCRIPTORS.map(
     active: true,
     collectionUrl: source.collectionUrl,
     maxCollectionsPerDay: 3,
-    freshnessTtlSeconds: JOBS_CACHE_TTL,
+    freshnessTtlSeconds: JOBS_FRESHNESS_TTL,
     confidence: source.confidence,
   }),
 );

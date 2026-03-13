@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '../../../redis/redis.service';
 import { appendRedisKey } from '../../../../common/utils/redis-key.util';
-import { JOBS_CACHE_TTL, REDIS_KEYS } from '../../constants/redis.constant';
+import {
+  JOBS_CACHE_TTL,
+  JOBS_CHANGE_SIGNALS_TTL,
+  JOBS_FRESHNESS_TTL,
+  REDIS_KEYS,
+} from '../../constants/redis.constant';
 import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
 import {
   CompanyType,
@@ -12,6 +17,7 @@ import {
   JobPostingCacheRepository,
 } from '../../application/ports/job-posting-cache.repository';
 import { getJobSourceDescriptor } from '../../constants/job-source.constant';
+import { JobPostingChangeResult } from '../../domain/models/job-posting-change.model';
 
 @Injectable()
 export class RedisJobPostingCacheRepository
@@ -20,7 +26,11 @@ export class RedisJobPostingCacheRepository
   constructor(private readonly redisService: RedisService) {}
 
   async initializeJobsCache(): Promise<void> {
-    await this.redisService.initializeServiceCache('hbnu:jobs');
+    await this.clearDerivedSearchCaches();
+  }
+
+  async clearDerivedSearchCaches(): Promise<void> {
+    await this.redisService.flushByPattern(`${REDIS_KEYS.JOBS_TECH}*`);
   }
 
   async getSearchJobs(cacheKey: string): Promise<JobPostingCacheEntry | null> {
@@ -71,6 +81,20 @@ export class RedisJobPostingCacheRepository
     await this.redisService.set(REDIS_KEYS.JOBS_ALL, entry, JOBS_CACHE_TTL);
   }
 
+  async getJobChangeSignals(): Promise<JobPostingChangeResult | null> {
+    return this.redisService.get<JobPostingChangeResult>(
+      REDIS_KEYS.JOBS_CHANGE_SIGNALS,
+    );
+  }
+
+  async setJobChangeSignals(result: JobPostingChangeResult): Promise<void> {
+    await this.redisService.set(
+      REDIS_KEYS.JOBS_CHANGE_SIGNALS,
+      result,
+      JOBS_CHANGE_SIGNALS_TTL,
+    );
+  }
+
   async getLastUpdate(): Promise<string | null> {
     return this.redisService.get<string>(REDIS_KEYS.JOBS_LAST_UPDATE);
   }
@@ -94,7 +118,7 @@ export class RedisJobPostingCacheRepository
         jobs: this.hydrateJobs(value),
         snapshot: buildSnapshotMetadata({
           collectedAt: lastUpdate ?? new Date(),
-          ttlSeconds: JOBS_CACHE_TTL,
+          ttlSeconds: JOBS_FRESHNESS_TTL,
           confidence: 0.7,
           sourceIds: fallbackSourceIds,
         }),

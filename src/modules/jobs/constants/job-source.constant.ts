@@ -90,6 +90,9 @@ export const JOB_SOURCE_CATALOG: Record<string, JobSourceDescriptor> = {
 };
 
 export const JOB_SOURCE_DESCRIPTORS = Object.values(JOB_SOURCE_CATALOG);
+export const JOB_SOURCE_COMPANIES = JOB_SOURCE_DESCRIPTORS.map(
+  (source) => source.company,
+);
 
 export function getJobSourceDescriptor(company: CompanyType): JobSourceDescriptor {
   const descriptor = JOB_SOURCE_CATALOG[company];
