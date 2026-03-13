@@ -1,3 +1,5 @@
+import { SnapshotMetadata } from '../../../../common/types/snapshot.types';
+
 export interface PaginatedResult<T> {
   data: T[];
   meta: {
@@ -5,5 +7,6 @@ export interface PaginatedResult<T> {
     page: number;
     limit: number;
     totalPages: number;
+    snapshot?: SnapshotMetadata;
   };
 }

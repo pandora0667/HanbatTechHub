@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Interval } from '@nestjs/schedule';
-import { UPDATE_INTERVAL } from './constants/blog.constant';
+import { Cron } from '@nestjs/schedule';
+import { BLOG_UPDATE_CRON } from './constants/blog.constant';
 import {
   BlogResponseDto,
   CompanyListResponseDto,
@@ -38,7 +38,7 @@ export class BlogService implements OnModuleInit {
     await this.initializeBlogFeedsUseCase.execute();
   }
 
-  @Interval(UPDATE_INTERVAL)
+  @Cron(BLOG_UPDATE_CRON)
   async updateFeeds() {
     if (!isBackgroundSyncEnabled()) {
       return;

@@ -17,6 +17,10 @@ import { JobPostingSearchService } from '../../domain/services/job-posting-searc
 import { JobSearchQuery } from '../../domain/types/job-search-query.type';
 import { PaginatedResult } from '../../domain/types/paginated-result.type';
 import { JobPostingCollectorService } from '../services/job-posting-collector.service';
+import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
+import { JOBS_CACHE_TTL } from '../../constants/redis.constant';
+import { JobPostingCacheEntry } from '../ports/job-posting-cache.repository';
+import { getJobSourceDescriptor } from '../../constants/job-source.constant';
 
 @Injectable()
 export class GetCompanyJobsUseCase {
@@ -36,10 +40,22 @@ export class GetCompanyJobsUseCase {
     try {
       const cachedJobs =
         await this.jobPostingCacheRepository.getCompanyJobs(company);
-      const jobs = cachedJobs ?? (await this.fetchAndCacheCompanyJobs(company));
+      const jobsEntry =
+        cachedJobs ?? (await this.fetchAndCacheCompanyJobs(company));
 
-      const filteredJobs = this.jobPostingSearchService.filter(jobs, query);
-      return this.jobPostingSearchService.paginate(filteredJobs, query);
+      const filteredJobs = this.jobPostingSearchService.filter(
+        jobsEntry.jobs,
+        query,
+      );
+      const paginated = this.jobPostingSearchService.paginate(filteredJobs, query);
+
+      return {
+        ...paginated,
+        meta: {
+          ...paginated.meta,
+          snapshot: jobsEntry.snapshot,
+        },
+      };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -58,11 +74,22 @@ export class GetCompanyJobsUseCase {
 
   private async fetchAndCacheCompanyJobs(
     company: CompanyType,
-  ): Promise<JobPosting[]> {
+  ): Promise<JobPostingCacheEntry> {
     const jobs =
       await this.jobPostingCollectorService.fetchCompanyJobs(company);
 
-    await this.jobPostingCacheRepository.setCompanyJobs(company, jobs);
-    return jobs;
+    const source = getJobSourceDescriptor(company);
+    const entry: JobPostingCacheEntry = {
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_CACHE_TTL,
+        confidence: source.confidence,
+        sourceIds: [source.id],
+      }),
+    };
+
+    await this.jobPostingCacheRepository.setCompanyJobs(company, entry);
+    return entry;
   }
 }

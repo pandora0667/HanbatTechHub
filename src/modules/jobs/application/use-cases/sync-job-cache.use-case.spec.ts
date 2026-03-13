@@ -16,7 +16,9 @@ describe('SyncJobCacheUseCase', () => {
     setSearchJobs: jest.fn(),
     getCompanyJobs: jest.fn(),
     setCompanyJobs: jest.fn(),
+    getAllJobs: jest.fn(),
     setAllJobs: jest.fn(),
+    getLastUpdate: jest.fn(),
     setLastUpdate: jest.fn(),
   };
 
@@ -62,17 +64,31 @@ describe('SyncJobCacheUseCase', () => {
     expect(jobPostingCacheRepository.setCompanyJobs).toHaveBeenNthCalledWith(
       1,
       COMPANY_ENUM.LINE,
-      lineJobs,
+      expect.objectContaining({
+        jobs: lineJobs,
+        snapshot: expect.objectContaining({
+          sourceIds: ['opportunity.jobs.line'],
+        }),
+      }),
     );
     expect(jobPostingCacheRepository.setCompanyJobs).toHaveBeenNthCalledWith(
       2,
       COMPANY_ENUM.TOSS,
-      tossJobs,
+      expect.objectContaining({
+        jobs: tossJobs,
+        snapshot: expect.objectContaining({
+          sourceIds: ['opportunity.jobs.toss'],
+        }),
+      }),
     );
-    expect(jobPostingCacheRepository.setAllJobs).toHaveBeenCalledWith([
-      ...lineJobs,
-      ...tossJobs,
-    ]);
+    expect(jobPostingCacheRepository.setAllJobs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobs: [...lineJobs, ...tossJobs],
+        snapshot: expect.objectContaining({
+          sourceIds: ['opportunity.jobs.line', 'opportunity.jobs.toss'],
+        }),
+      }),
+    );
     expect(jobPostingCacheRepository.setLastUpdate).toHaveBeenCalledWith(
       now.toISOString(),
     );

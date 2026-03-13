@@ -17,8 +17,9 @@ export const REDIS_KEYS = {
   NOTICE_DETAIL: 'hbnu:notice:detail:', // 공지사항 상세 정보 (키 뒤에 nttId 붙임)
 } as const;
 
-// 평일 오전 9시부터 오후 6시까지 1시간 간격으로 업데이트
-export const NOTICE_UPDATE_CRON = '0 9-18 * * 1-5';
+// 평일 기준 하루 최대 3회만 안전하게 업데이트
+export const NOTICE_UPDATE_CRON =
+  process.env.NOTICE_UPDATE_CRON || '0 9,13,17 * * 1-5';
 
 // 캐시 유효기간 (1시간)
 export const NOTICE_CACHE_TTL = 60 * 60;

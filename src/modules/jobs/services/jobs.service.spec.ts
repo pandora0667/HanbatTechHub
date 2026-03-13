@@ -105,11 +105,17 @@ describe('JobsService', () => {
     expect(crawler.fetchJobs).toHaveBeenCalledWith();
     expect(redisService.set).toHaveBeenCalledWith(
       'hbnu:jobs:company:LINE',
-      expect.any(Array),
+      expect.objectContaining({
+        jobs: expect.any(Array),
+        snapshot: expect.objectContaining({
+          sourceIds: ['opportunity.jobs.line'],
+        }),
+      }),
       expect.any(Number),
     );
     expect(response.data).toHaveLength(5);
     expect(response.meta.totalPages).toBe(3);
+    expect(response.meta.snapshot?.sourceIds).toEqual(['opportunity.jobs.line']);
   });
 
   it('returns supported companies from the registry-backed use case', async () => {

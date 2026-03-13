@@ -73,7 +73,8 @@ export const CACHE_KEYS = {
   COMPANY_LAST_UPDATE: 'blog:company:last-update',
 } as const;
 
-export const UPDATE_INTERVAL = 30 * 60 * 1000; // 30분
+export const BLOG_UPDATE_CRON =
+  process.env.BLOG_UPDATE_CRON || '0 0 0,8,16 * * *'; // 하루 3회
 
 export const REDIS_KEYS = {
   BLOG_POSTS: 'hbnu:blog:posts',
