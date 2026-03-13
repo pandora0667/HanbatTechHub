@@ -69,6 +69,12 @@ import { GetRadarWorkspaceUseCase } from '../src/modules/workspace/application/u
 import { GetTodayWorkspaceUseCase } from '../src/modules/workspace/application/use-cases/get-today-workspace.use-case';
 import { RadarWorkspaceOverviewService } from '../src/modules/workspace/domain/services/radar-workspace-overview.service';
 import { TodayWorkspaceOverviewService } from '../src/modules/workspace/domain/services/today-workspace-overview.service';
+import { CompanyIntelligenceService } from '../src/modules/company-intelligence/company-intelligence.service';
+import { GetCompanyBriefUseCase } from '../src/modules/company-intelligence/application/use-cases/get-company-brief.use-case';
+import { CompanyBriefOverviewService } from '../src/modules/company-intelligence/domain/services/company-brief-overview.service';
+import { buildSnapshotMetadata } from '../src/common/utils/snapshot.util';
+import { JOBS_FRESHNESS_TTL } from '../src/modules/jobs/constants/redis.constant';
+import { getJobSourceDescriptor } from '../src/modules/jobs/constants/job-source.constant';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -133,7 +139,9 @@ describeLive('Live Integration Smoke', () => {
   let blogService: BlogService;
   let signalsService: SignalsService;
   let workspaceService: WorkspaceService;
+  let companyIntelligenceService: CompanyIntelligenceService;
   let redisService: InMemoryRedisService;
+  let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -218,6 +226,9 @@ describeLive('Live Integration Smoke', () => {
         GetTodayWorkspaceUseCase,
         RadarWorkspaceOverviewService,
         TodayWorkspaceOverviewService,
+        CompanyIntelligenceService,
+        GetCompanyBriefUseCase,
+        CompanyBriefOverviewService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -228,6 +239,8 @@ describeLive('Live Integration Smoke', () => {
     blogService = moduleRef.get(BlogService);
     signalsService = moduleRef.get(SignalsService);
     workspaceService = moduleRef.get(WorkspaceService);
+    companyIntelligenceService = moduleRef.get(CompanyIntelligenceService);
+    jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
 
@@ -398,6 +411,46 @@ describeLive('Live Integration Smoke', () => {
     expect(response.sections.staleSources.signals).toEqual(expect.any(Array));
     expect(response.sections.missingSources.signals).toEqual(expect.any(Array));
     expect(response.sections.upcomingDeadlines.signals).toEqual(expect.any(Array));
+  });
+
+  it('builds a live company brief from cached job and content snapshots', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const crawler = new NaverCrawler(httpClient, configService);
+    const jobs = await crawler.fetchJobs();
+    const source = getJobSourceDescriptor('NAVER');
+    const snapshot = buildSnapshotMetadata({
+      collectedAt: new Date(),
+      ttlSeconds: JOBS_FRESHNESS_TTL,
+      confidence: source.confidence,
+      sourceIds: [source.id],
+    });
+
+    await jobPostingCacheRepository.setCompanyJobs('NAVER', {
+      jobs,
+      snapshot,
+    });
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot,
+    });
+    await blogService.getCompanyPosts('NAVER_D2', 1, 3);
+
+    const response = await companyIntelligenceService.getCompanyBrief('NAVER', {
+      jobLimit: 3,
+      contentLimit: 2,
+      changeLimit: 5,
+      deadlineLimit: 3,
+      deadlineWindowDays: 7,
+    });
+
+    expect(response.company.code).toBe('NAVER');
+    expect(response.sections.jobs.items.length).toBeGreaterThan(0);
+    expect(response.sections.latestContent.available).toBe(true);
+    expect(response.sections.latestContent.items.length).toBeGreaterThan(0);
+    expect(response.sections.sources.length).toBeGreaterThan(0);
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(

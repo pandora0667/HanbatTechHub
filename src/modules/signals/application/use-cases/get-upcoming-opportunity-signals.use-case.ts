@@ -5,8 +5,10 @@ import {
 } from '../../../jobs/application/ports/job-posting-cache.repository';
 import { OpportunitySignalBuilderService } from '../../domain/services/opportunity-signal-builder.service';
 import { OpportunitySignalResult } from '../../domain/models/opportunity-signal.model';
+import { CompanyType } from '../../../jobs/interfaces/job-posting.interface';
 
 export interface GetUpcomingOpportunitySignalsQuery {
+  company?: CompanyType;
   days?: number;
   limit?: number;
 }
@@ -23,9 +25,12 @@ export class GetUpcomingOpportunitySignalsUseCase {
     query: GetUpcomingOpportunitySignalsQuery = {},
   ): Promise<OpportunitySignalResult> {
     const allJobs = await this.jobPostingCacheRepository.getAllJobs();
+    const filteredJobs = query.company
+      ? (allJobs?.jobs ?? []).filter((job) => job.company === query.company)
+      : (allJobs?.jobs ?? []);
 
     return this.opportunitySignalBuilderService.buildUpcomingJobDeadlineSignals({
-      jobs: allJobs?.jobs ?? [],
+      jobs: filteredJobs,
       snapshot: allJobs?.snapshot,
       windowDays: query.days ?? 7,
       limit: query.limit ?? 10,

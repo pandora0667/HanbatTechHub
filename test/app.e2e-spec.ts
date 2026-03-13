@@ -197,4 +197,36 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/companies/NAVER/brief (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/companies/NAVER/brief')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        company: expect.objectContaining({
+          code: 'NAVER',
+          name: expect.any(String),
+          provider: expect.any(String),
+        }),
+        overview: expect.objectContaining({
+          openJobs: expect.any(Number),
+          newJobs: expect.any(Number),
+          updatedJobs: expect.any(Number),
+          removedJobs: expect.any(Number),
+          closingSoonJobs: expect.any(Number),
+          latestContentItems: expect.any(Number),
+        }),
+        sections: expect.objectContaining({
+          jobs: expect.any(Object),
+          latestContent: expect.any(Object),
+          recentChanges: expect.any(Object),
+          upcomingDeadlines: expect.any(Object),
+          sources: expect.any(Array),
+        }),
+      }),
+    );
+  });
 });

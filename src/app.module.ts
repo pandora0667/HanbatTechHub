@@ -12,6 +12,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { SourceRegistryModule } from './modules/source-registry/source-registry.module';
 import { SignalsModule } from './modules/signals/signals.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
+import { CompanyIntelligenceModule } from './modules/company-intelligence/company-intelligence.module';
 
 // KST 시간대 설정
 process.env.TZ = 'Asia/Seoul';
@@ -32,6 +33,7 @@ process.env.TZ = 'Asia/Seoul';
     SourceRegistryModule,
     SignalsModule,
     WorkspaceModule,
+    CompanyIntelligenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
