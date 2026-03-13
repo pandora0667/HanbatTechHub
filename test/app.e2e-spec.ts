@@ -229,4 +229,23 @@ describe('AppController (e2e)', () => {
       }),
     );
   });
+
+  it('/api/v1/skills/map (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/skills/map')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalJobs: expect.any(Number),
+          jobsWithSkills: expect.any(Number),
+          coverageRatio: expect.any(Number),
+          totalSkills: expect.any(Number),
+        }),
+        skills: expect.any(Array),
+      }),
+    );
+  });
 });

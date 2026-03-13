@@ -75,6 +75,10 @@ import { CompanyBriefOverviewService } from '../src/modules/company-intelligence
 import { buildSnapshotMetadata } from '../src/common/utils/snapshot.util';
 import { JOBS_FRESHNESS_TTL } from '../src/modules/jobs/constants/redis.constant';
 import { getJobSourceDescriptor } from '../src/modules/jobs/constants/job-source.constant';
+import { SkillIntelligenceService } from '../src/modules/skill-intelligence/skill-intelligence.service';
+import { GetSkillMapUseCase } from '../src/modules/skill-intelligence/application/use-cases/get-skill-map.use-case';
+import { SkillMapBuilderService } from '../src/modules/skill-intelligence/domain/services/skill-map-builder.service';
+import { SkillNameNormalizerService } from '../src/modules/skill-intelligence/domain/services/skill-name-normalizer.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -140,6 +144,7 @@ describeLive('Live Integration Smoke', () => {
   let signalsService: SignalsService;
   let workspaceService: WorkspaceService;
   let companyIntelligenceService: CompanyIntelligenceService;
+  let skillIntelligenceService: SkillIntelligenceService;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -229,6 +234,10 @@ describeLive('Live Integration Smoke', () => {
         CompanyIntelligenceService,
         GetCompanyBriefUseCase,
         CompanyBriefOverviewService,
+        SkillIntelligenceService,
+        GetSkillMapUseCase,
+        SkillMapBuilderService,
+        SkillNameNormalizerService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -240,6 +249,7 @@ describeLive('Live Integration Smoke', () => {
     signalsService = moduleRef.get(SignalsService);
     workspaceService = moduleRef.get(WorkspaceService);
     companyIntelligenceService = moduleRef.get(CompanyIntelligenceService);
+    skillIntelligenceService = moduleRef.get(SkillIntelligenceService);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -451,6 +461,48 @@ describeLive('Live Integration Smoke', () => {
     expect(response.sections.latestContent.available).toBe(true);
     expect(response.sections.latestContent.items.length).toBeGreaterThan(0);
     expect(response.sections.sources.length).toBeGreaterThan(0);
+  });
+
+  it('builds a live skill map from cached opportunity snapshots', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const kakaoJobs = await new KakaoCrawler(httpClient, configService).fetchJobs();
+    const lineJobs = await new LineCrawler(httpClient, configService).fetchJobs();
+    const jobs = [...kakaoJobs, ...lineJobs];
+
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: 0.8,
+        sourceIds: [
+          getJobSourceDescriptor('KAKAO').id,
+          getJobSourceDescriptor('LINE').id,
+        ],
+      }),
+    });
+
+    const response = await skillIntelligenceService.getSkillMap({
+      limit: 10,
+      minDemand: 1,
+      sampleLimit: 2,
+    });
+
+    expect(response.summary.totalJobs).toBeGreaterThan(0);
+    expect(response.summary.jobsWithSkills).toBeGreaterThan(0);
+    expect(response.skills.length).toBeGreaterThan(0);
+    expect(response.skills[0]).toEqual(
+      expect.objectContaining({
+        skill: expect.any(String),
+        demandCount: expect.any(Number),
+        companyCount: expect.any(Number),
+        companies: expect.any(Array),
+        sampleRoles: expect.any(Array),
+      }),
+    );
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
