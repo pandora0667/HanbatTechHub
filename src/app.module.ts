@@ -15,6 +15,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { CompanyIntelligenceModule } from './modules/company-intelligence/company-intelligence.module';
 import { SkillIntelligenceModule } from './modules/skill-intelligence/skill-intelligence.module';
 import { CompareModule } from './modules/compare/compare.module';
+import { ResearchModule } from './modules/research/research.module';
 
 // KST 시간대 설정
 process.env.TZ = 'Asia/Seoul';
@@ -38,6 +39,7 @@ process.env.TZ = 'Asia/Seoul';
     CompanyIntelligenceModule,
     SkillIntelligenceModule,
     CompareModule,
+    ResearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

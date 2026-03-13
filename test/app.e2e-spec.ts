@@ -298,4 +298,28 @@ describe('AppController (e2e)', () => {
     );
     expect(response.body.companies).toHaveLength(2);
   });
+
+  it('/api/v1/research/companies/NAVER (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/research/companies/NAVER')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        company: expect.objectContaining({
+          code: 'NAVER',
+          name: expect.any(String),
+          provider: expect.any(String),
+        }),
+        thesis: expect.objectContaining({
+          headline: expect.any(String),
+          summary: expect.any(String),
+        }),
+        insights: expect.any(Array),
+        actions: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
+  });
 });

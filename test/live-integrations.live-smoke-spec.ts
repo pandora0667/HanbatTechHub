@@ -85,6 +85,9 @@ import { SkillNameNormalizerService } from '../src/modules/skill-intelligence/do
 import { CompareService } from '../src/modules/compare/compare.service';
 import { GetCompanyCompareUseCase } from '../src/modules/compare/application/use-cases/get-company-compare.use-case';
 import { CompanyCompareOverviewService } from '../src/modules/compare/domain/services/company-compare-overview.service';
+import { ResearchService } from '../src/modules/research/research.service';
+import { GetCompanyResearchUseCase } from '../src/modules/research/application/use-cases/get-company-research.use-case';
+import { CompanyResearchBuilderService } from '../src/modules/research/domain/services/company-research-builder.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -152,6 +155,7 @@ describeLive('Live Integration Smoke', () => {
   let companyIntelligenceService: CompanyIntelligenceService;
   let skillIntelligenceService: SkillIntelligenceService;
   let compareService: CompareService;
+  let researchService: ResearchService;
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -251,6 +255,9 @@ describeLive('Live Integration Smoke', () => {
         CompareService,
         GetCompanyCompareUseCase,
         CompanyCompareOverviewService,
+        ResearchService,
+        GetCompanyResearchUseCase,
+        CompanyResearchBuilderService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -264,6 +271,7 @@ describeLive('Live Integration Smoke', () => {
     companyIntelligenceService = moduleRef.get(CompanyIntelligenceService);
     skillIntelligenceService = moduleRef.get(SkillIntelligenceService);
     compareService = moduleRef.get(CompareService);
+    researchService = moduleRef.get(ResearchService);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     redisService = moduleRef.get(RedisService);
   });
@@ -627,6 +635,55 @@ describeLive('Live Integration Smoke', () => {
         sources: expect.any(Array),
       }),
     );
+  });
+
+  it('builds a live deterministic company research brief from cached snapshots', async () => {
+    const httpClient = new HttpClientUtil();
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+    const jobs = await new NaverCrawler(httpClient, configService).fetchJobs();
+
+    await jobPostingCacheRepository.setCompanyJobs('NAVER', {
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('NAVER').confidence,
+        sourceIds: [getJobSourceDescriptor('NAVER').id],
+      }),
+    });
+    await jobPostingCacheRepository.setAllJobs({
+      jobs,
+      snapshot: buildSnapshotMetadata({
+        collectedAt: new Date(),
+        ttlSeconds: JOBS_FRESHNESS_TTL,
+        confidence: getJobSourceDescriptor('NAVER').confidence,
+        sourceIds: [getJobSourceDescriptor('NAVER').id],
+      }),
+    });
+    await blogService.getCompanyPosts('NAVER_D2', 1, 3);
+
+    const response = await researchService.getCompanyResearch('NAVER', {
+      jobLimit: 3,
+      contentLimit: 2,
+      changeLimit: 5,
+      deadlineLimit: 3,
+      deadlineWindowDays: 7,
+      skillLimit: 5,
+      minSkillDemand: 1,
+    });
+
+    expect(response.company.code).toBe('NAVER');
+    expect(response.thesis).toEqual(
+      expect.objectContaining({
+        headline: expect.any(String),
+        summary: expect.any(String),
+      }),
+    );
+    expect(response.insights.length).toBeGreaterThan(0);
+    expect(response.actions).toEqual(expect.any(Array));
+    expect(response.sources.length).toBeGreaterThan(0);
   });
 
   (RUN_LIVE_SMOKE_COUPANG ? it : it.skip)(
