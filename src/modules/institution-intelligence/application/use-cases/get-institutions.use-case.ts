@@ -13,6 +13,15 @@ export class GetInstitutionsUseCase {
         name: entry.name,
         region: entry.region,
         audience: entry.audience,
+        institutionType: entry.institutionType,
+        officialEntryUrl: entry.officialEntryUrl,
+        siteFamily: entry.siteFamily,
+        rolloutWave: entry.rolloutWave,
+        rolloutStatus: entry.rolloutStatus,
+        overviewAvailable: entry.sourceIds.length > 0,
+        priorityServiceTypes: [...entry.priorityServiceTypes],
+        implementedServiceTypes: [...entry.implementedServiceTypes],
+        sourceIds: [...entry.sourceIds],
       })),
     };
   }

@@ -50,6 +50,12 @@ export class GetInstitutionOverviewUseCase {
       throw new NotFoundException(`Unsupported institution: ${institution}`);
     }
 
+    if (registryEntry.sourceIds.length === 0) {
+      throw new NotFoundException(
+        `Institution overview is not implemented yet for ${institution}`,
+      );
+    }
+
     const mondayDate = this.menuCalendarService.formatDate(
       this.menuCalendarService.getMondayDate(new Date()),
     );
@@ -101,6 +107,15 @@ export class GetInstitutionOverviewUseCase {
         name: registryEntry.name,
         region: registryEntry.region,
         audience: registryEntry.audience,
+        institutionType: registryEntry.institutionType,
+        officialEntryUrl: registryEntry.officialEntryUrl,
+        siteFamily: registryEntry.siteFamily,
+        rolloutWave: registryEntry.rolloutWave,
+        rolloutStatus: registryEntry.rolloutStatus,
+        overviewAvailable: true,
+        priorityServiceTypes: [...registryEntry.priorityServiceTypes],
+        implementedServiceTypes: [...registryEntry.implementedServiceTypes],
+        sourceIds: [...registryEntry.sourceIds],
       },
       snapshot: mergedSnapshot,
       summary: {

@@ -1,49 +1,40 @@
 import { SourceRegistryEntry } from '../../common/types/snapshot.types';
 import { TECH_BLOG_RSS, DEFAULT_REDIS_TTL } from '../blog/constants/blog.constant';
+import { INSTITUTION_SOURCE_CATALOG } from '../institution-intelligence/data/institution-source-catalog.data';
 import { JOBS_FRESHNESS_TTL } from '../jobs/constants/redis.constant';
 import { JOB_SOURCE_DESCRIPTORS } from '../jobs/constants/job-source.constant';
 import { MENU_CACHE_TTL } from '../menu/constants/menu.constant';
-import { HANBAT_NOTICE, NOTICE_CACHE_TTL } from '../notice/constants/notice.constant';
+import { NOTICE_CACHE_TTL } from '../notice/constants/notice.constant';
 
-const INSTITUTION_SOURCES: SourceRegistryEntry[] = [
-  {
-    id: 'institution.hanbat.menu',
-    name: '한밭대학교 학식',
-    provider: 'HANBAT',
-    context: 'institution',
-    collectionMode: 'api',
-    tier: 'public_page',
+const INSTITUTION_SOURCES: SourceRegistryEntry[] = INSTITUTION_SOURCE_CATALOG
+  .filter((entry) => entry.sourceId)
+  .map((entry) => ({
+    id: entry.sourceId!,
+    name: entry.name,
+    provider: entry.institutionId,
+    context: 'institution' as const,
+    collectionMode: entry.collectionMode,
+    tier: entry.tier,
     active: true,
-    state: 'active',
-    collectionUrl:
-      'https://www.hanbat.ac.kr/prog/cafeteria/kor/sub06_030301/list.do',
-    maxCollectionsPerDay: 1,
-    minimumIntervalHours: 24,
-    freshnessTtlSeconds: MENU_CACHE_TTL,
-    confidence: 0.86,
-    riskTier: 'low',
-    safeCollectionPolicy: 'single daily snapshot collection only',
-    notes: '학교 공개 AJAX 응답을 스냅샷으로 수집합니다.',
-  },
-  {
-    id: 'institution.hanbat.notice',
-    name: '한밭대학교 공지사항',
-    provider: 'HANBAT',
-    context: 'institution',
-    collectionMode: 'html',
-    tier: 'public_page',
-    active: true,
-    state: 'active',
-    collectionUrl: HANBAT_NOTICE.BASE_URL,
-    maxCollectionsPerDay: 3,
-    minimumIntervalHours: 8,
-    freshnessTtlSeconds: NOTICE_CACHE_TTL,
-    confidence: 0.8,
-    riskTier: 'medium',
-    safeCollectionPolicy: 'low-frequency HTML collection with cache-only serving',
-    notes: '공개 공지 게시판을 저빈도로 스냅샷 수집합니다.',
-  },
-];
+    state: 'active' as const,
+    collectionUrl: entry.seedUrl,
+    maxCollectionsPerDay: entry.sourceId === 'institution.hanbat.menu' ? 1 : 3,
+    minimumIntervalHours: entry.sourceId === 'institution.hanbat.menu' ? 24 : 8,
+    freshnessTtlSeconds:
+      entry.sourceId === 'institution.hanbat.menu'
+        ? MENU_CACHE_TTL
+        : NOTICE_CACHE_TTL,
+    confidence: entry.sourceId === 'institution.hanbat.menu' ? 0.86 : 0.8,
+    riskTier: entry.sourceId === 'institution.hanbat.menu' ? 'low' : 'medium',
+    safeCollectionPolicy:
+      entry.sourceId === 'institution.hanbat.menu'
+        ? 'single daily snapshot collection only'
+        : 'low-frequency HTML collection with cache-only serving',
+    notes:
+      entry.sourceId === 'institution.hanbat.menu'
+        ? '학교 공개 AJAX 응답을 스냅샷으로 수집합니다.'
+        : '공개 공지 게시판을 저빈도로 스냅샷 수집합니다.',
+  }));
 
 const JOB_SOURCES: SourceRegistryEntry[] = JOB_SOURCE_DESCRIPTORS.map(
   (source) => ({

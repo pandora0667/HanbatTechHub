@@ -215,6 +215,50 @@ describe('AppController (e2e)', () => {
           name: expect.any(String),
           region: expect.any(String),
           audience: expect.any(String),
+          institutionType: expect.any(String),
+          siteFamily: expect.any(String),
+          rolloutWave: expect.any(Number),
+          rolloutStatus: expect.any(String),
+          overviewAvailable: true,
+          priorityServiceTypes: expect.any(Array),
+          implementedServiceTypes: expect.any(Array),
+          sourceIds: expect.any(Array),
+        }),
+      ]),
+    );
+    expect(response.body.institutions.length).toBeGreaterThan(30);
+  });
+
+  it('/api/v1/institutions/HANBAT/catalog (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/HANBAT/catalog')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        institution: expect.objectContaining({
+          id: 'HANBAT',
+          overviewAvailable: true,
+        }),
+        summary: expect.objectContaining({
+          totalBlueprints: expect.any(Number),
+          implementedBlueprints: expect.any(Number),
+          registeredSources: 2,
+        }),
+        services: expect.any(Array),
+        registeredSources: expect.any(Array),
+      }),
+    );
+    expect(response.body.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          serviceType: 'academic_notice',
+          sourceId: 'institution.hanbat.notice',
+        }),
+        expect.objectContaining({
+          serviceType: 'meal',
+          sourceId: 'institution.hanbat.menu',
         }),
       ]),
     );
@@ -233,6 +277,14 @@ describe('AppController (e2e)', () => {
           name: expect.any(String),
           region: expect.any(String),
           audience: expect.any(String),
+          institutionType: expect.any(String),
+          siteFamily: expect.any(String),
+          rolloutWave: expect.any(Number),
+          rolloutStatus: expect.any(String),
+          overviewAvailable: true,
+          priorityServiceTypes: expect.any(Array),
+          implementedServiceTypes: expect.any(Array),
+          sourceIds: expect.any(Array),
         }),
         summary: expect.objectContaining({
           regularNotices: expect.any(Number),
@@ -250,6 +302,20 @@ describe('AppController (e2e)', () => {
           weeklyMenus: expect.any(Array),
           sources: expect.any(Array),
         }),
+      }),
+    );
+  });
+
+  it('/api/v1/institutions/SNU/overview (GET) returns 404 before implementation', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/SNU/overview')
+      .expect(404);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Institution overview is not implemented yet for SNU',
       }),
     );
   });

@@ -5,6 +5,7 @@ import {
   InstitutionType,
 } from './constants/institution-registry.constant';
 import {
+  InstitutionCatalogResponseDto,
   InstitutionOverviewResponseDto,
   InstitutionRegistryResponseDto,
 } from './dto/institution.response.dto';
@@ -28,6 +29,26 @@ export class InstitutionIntelligenceController {
   })
   getInstitutions(): InstitutionRegistryResponseDto {
     return this.institutionIntelligenceService.getInstitutions();
+  }
+
+  @Get(':institution/catalog')
+  @ApiOperation({
+    summary: 'institution source catalog 조회',
+  })
+  @ApiParam({
+    name: 'institution',
+    enum: Object.values(INSTITUTION_ENUM),
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'institution rollout catalog',
+    type: InstitutionCatalogResponseDto,
+  })
+  getInstitutionCatalog(
+    @Param('institution', new ParseEnumPipe(INSTITUTION_ENUM))
+    institution: InstitutionType,
+  ): InstitutionCatalogResponseDto {
+    return this.institutionIntelligenceService.getInstitutionCatalog(institution);
   }
 
   @Get(':institution/overview')

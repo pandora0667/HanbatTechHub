@@ -102,4 +102,10 @@ describe('GetInstitutionOverviewUseCase', () => {
     );
     expect(result.sections.sources).toHaveLength(2);
   });
+
+  it('rejects institutions without implemented overview sources', async () => {
+    await expect(useCase.execute('SNU')).rejects.toThrow(
+      'Institution overview is not implemented yet for SNU',
+    );
+  });
 });

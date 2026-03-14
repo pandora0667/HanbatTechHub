@@ -103,6 +103,7 @@ import { SourceRuntimeStatusService } from '../src/modules/source-registry/appli
 import { GetSourceHealthUseCase } from '../src/modules/source-registry/application/use-cases/get-source-health.use-case';
 import { InstitutionIntelligenceService } from '../src/modules/institution-intelligence/institution-intelligence.service';
 import { GetInstitutionsUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institutions.use-case';
+import { GetInstitutionCatalogUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-catalog.use-case';
 import { GetInstitutionOverviewUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-overview.use-case';
 import { ContentIntelligenceService } from '../src/modules/content-intelligence/content-intelligence.service';
 import { GetContentFeedUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-feed.use-case';
@@ -299,6 +300,7 @@ describeLive('Live Integration Smoke', () => {
         GetSourceHealthUseCase,
         InstitutionIntelligenceService,
         GetInstitutionsUseCase,
+        GetInstitutionCatalogUseCase,
         GetInstitutionOverviewUseCase,
         ContentIntelligenceService,
         GetContentFeedUseCase,
@@ -447,6 +449,10 @@ describeLive('Live Integration Smoke', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'HANBAT',
+          overviewAvailable: true,
+        }),
+        expect.objectContaining({
+          id: 'SNU',
         }),
       ]),
     );
