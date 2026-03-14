@@ -8,6 +8,7 @@ import { AppModule } from '../src/app.module';
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { InstitutionHomepageSourceGateway } from '../src/modules/institution-intelligence/infrastructure/gateways/institution-homepage-source.gateway';
+import { INSTITUTION_DISCOVERY_REPOSITORY } from '../src/modules/institution-intelligence/application/ports/institution-discovery.repository';
 
 class InMemoryRedisService {
   private readonly store = new Map<string, string>();
@@ -48,6 +49,9 @@ class InMemoryRedisService {
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  let institutionDiscoveryRepository: {
+    saveSnapshot: (institution: string, snapshot: unknown) => Promise<void>;
+  };
   const previousBackgroundSync = process.env.ENABLE_BACKGROUND_SYNC;
 
   jest.setTimeout(60000);
@@ -90,6 +94,7 @@ describe('AppController (e2e)', () => {
       exclude: ['/health'],
     });
     await app.init();
+    institutionDiscoveryRepository = app.get(INSTITUTION_DISCOVERY_REPOSITORY);
   });
 
   afterAll(async () => {
@@ -183,6 +188,95 @@ describe('AppController (e2e)', () => {
           removed: expect.any(Number),
         }),
         signals: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/signals/institutions/opportunities/changes (GET)', async () => {
+    const previousCollectedAt = '2026-03-13T12:00:00.000Z';
+    const currentCollectedAt = '2026-03-14T12:00:00.000Z';
+
+    await institutionDiscoveryRepository.saveSnapshot('SNU', {
+      institutionId: 'SNU',
+      mode: 'live',
+      collectedAt: previousCollectedAt,
+      seedUrls: ['https://www.snu.ac.kr'],
+      pagesVisited: ['https://www.snu.ac.kr'],
+      sections: [
+        {
+          serviceType: 'scholarship',
+          links: [
+            {
+              title: '장학금 안내(이전)',
+              url: 'https://www.snu.ac.kr/scholarship',
+              pageUrl: 'https://www.snu.ac.kr/page',
+              matchedKeywords: ['장학'],
+              score: 0.8,
+            },
+          ],
+        },
+      ],
+    });
+    await institutionDiscoveryRepository.saveSnapshot('SNU', {
+      institutionId: 'SNU',
+      mode: 'live',
+      collectedAt: currentCollectedAt,
+      seedUrls: ['https://www.snu.ac.kr'],
+      pagesVisited: ['https://www.snu.ac.kr'],
+      sections: [
+        {
+          serviceType: 'scholarship',
+          links: [
+            {
+              title: '장학금 안내',
+              url: 'https://www.snu.ac.kr/scholarship',
+              pageUrl: 'https://www.snu.ac.kr/page',
+              matchedKeywords: ['장학'],
+              score: 0.8,
+            },
+          ],
+        },
+        {
+          serviceType: 'career_program',
+          links: [
+            {
+              title: '취업지원센터',
+              url: 'https://www.snu.ac.kr/career',
+              pageUrl: 'https://www.snu.ac.kr/page',
+              matchedKeywords: ['취업'],
+              score: 0.7,
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/signals/institutions/opportunities/changes?institutions=SNU')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        baselineCollectedAt: previousCollectedAt,
+        summary: expect.objectContaining({
+          total: 2,
+          created: 1,
+          updated: 1,
+          removed: 0,
+        }),
+        signals: expect.arrayContaining([
+          expect.objectContaining({
+            changeType: 'new',
+            institutionId: 'SNU',
+            serviceType: 'career_program',
+          }),
+          expect.objectContaining({
+            changeType: 'updated',
+            institutionId: 'SNU',
+            serviceType: 'scholarship',
+          }),
+        ]),
       }),
     );
   });
@@ -456,6 +550,9 @@ describe('AppController (e2e)', () => {
           updatedOpportunities: expect.any(Number),
           removedOpportunities: expect.any(Number),
           closingSoonOpportunities: expect.any(Number),
+          newInstitutionOpportunities: expect.any(Number),
+          updatedInstitutionOpportunities: expect.any(Number),
+          removedInstitutionOpportunities: expect.any(Number),
         }),
         sections: expect.objectContaining({
           staleSources: expect.any(Object),
@@ -464,6 +561,9 @@ describe('AppController (e2e)', () => {
           updatedOpportunities: expect.any(Object),
           removedOpportunities: expect.any(Object),
           upcomingDeadlines: expect.any(Object),
+          newInstitutionOpportunities: expect.any(Object),
+          updatedInstitutionOpportunities: expect.any(Object),
+          removedInstitutionOpportunities: expect.any(Object),
         }),
       }),
     );

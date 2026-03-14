@@ -8,6 +8,9 @@ export interface InstitutionDiscoveryRepository {
   getSnapshot(
     institution: InstitutionType,
   ): Promise<InstitutionDiscoverySnapshot | null>;
+  getPreviousSnapshot(
+    institution: InstitutionType,
+  ): Promise<InstitutionDiscoverySnapshot | null>;
   saveSnapshot(
     institution: InstitutionType,
     snapshot: InstitutionDiscoverySnapshot,

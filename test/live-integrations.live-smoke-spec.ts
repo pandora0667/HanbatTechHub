@@ -63,6 +63,8 @@ import { SourceLastUpdateResolverService } from '../src/modules/signals/applicat
 import { GetSourceFreshnessSignalsUseCase } from '../src/modules/signals/application/use-cases/get-source-freshness-signals.use-case';
 import { GetUpcomingOpportunitySignalsUseCase } from '../src/modules/signals/application/use-cases/get-upcoming-opportunity-signals.use-case';
 import { GetOpportunityChangeSignalsUseCase } from '../src/modules/signals/application/use-cases/get-opportunity-change-signals.use-case';
+import { GetInstitutionOpportunityChangeSignalsUseCase } from '../src/modules/signals/application/use-cases/get-institution-opportunity-change-signals.use-case';
+import { InstitutionOpportunityChangeDetectorService } from '../src/modules/signals/domain/services/institution-opportunity-change-detector.service';
 import { SourceRegistryService } from '../src/modules/source-registry/source-registry.service';
 import { RedisJobPostingCacheRepository } from '../src/modules/jobs/infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../src/modules/jobs/application/ports/job-posting-cache.repository';
@@ -194,6 +196,10 @@ describeLive('Live Integration Smoke', () => {
   let institutionIntelligenceService: InstitutionIntelligenceService;
   let contentIntelligenceService: ContentIntelligenceService;
   let getSourceHealthUseCase: GetSourceHealthUseCase;
+  let institutionDiscoveryRepository: {
+    getSnapshot: (institution: string) => Promise<any>;
+    saveSnapshot: (institution: string, snapshot: unknown) => Promise<void>;
+  };
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
 
@@ -272,10 +278,12 @@ describeLive('Live Integration Smoke', () => {
         SignalsService,
         SourceFreshnessEvaluatorService,
         OpportunitySignalBuilderService,
+        InstitutionOpportunityChangeDetectorService,
         SourceLastUpdateResolverService,
         GetSourceFreshnessSignalsUseCase,
         GetUpcomingOpportunitySignalsUseCase,
         GetOpportunityChangeSignalsUseCase,
+        GetInstitutionOpportunityChangeSignalsUseCase,
         SourceRegistryService,
         WorkspaceService,
         GetActWorkspaceUseCase,
@@ -354,6 +362,7 @@ describeLive('Live Integration Smoke', () => {
     contentIntelligenceService = moduleRef.get(ContentIntelligenceService);
     getSourceHealthUseCase = moduleRef.get(GetSourceHealthUseCase);
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
+    institutionDiscoveryRepository = moduleRef.get(INSTITUTION_DISCOVERY_REPOSITORY);
     redisService = moduleRef.get(RedisService);
   });
 
@@ -670,6 +679,74 @@ describeLive('Live Integration Smoke', () => {
     );
   });
 
+  it('builds institution opportunity change signals from cached discovery history', async () => {
+    await institutionIntelligenceService.getInstitutionDiscovery('SNU');
+    const currentSnapshot =
+      await institutionDiscoveryRepository.getSnapshot('SNU');
+
+    expect(currentSnapshot).toBeTruthy();
+
+    const scholarshipSection = currentSnapshot.sections.find(
+      (section: { serviceType: string }) => section.serviceType === 'scholarship',
+    );
+    const previousSnapshot = {
+      ...currentSnapshot,
+      collectedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+      sections: currentSnapshot.sections.map(
+        (section: { serviceType: string; links: Array<any> }) => {
+          if (section.serviceType === 'scholarship' && section.links.length > 0) {
+            return {
+              ...section,
+              links: [
+                {
+                  ...section.links[0],
+                  title: `${section.links[0].title} 이전`,
+                },
+              ],
+            };
+          }
+
+          if (section.serviceType === 'career_program') {
+            return {
+              ...section,
+              links: [],
+            };
+          }
+
+          return section;
+        },
+      ),
+    };
+
+    await institutionDiscoveryRepository.saveSnapshot('SNU', previousSnapshot);
+    await institutionDiscoveryRepository.saveSnapshot('SNU', currentSnapshot);
+
+    const response = await signalsService.getInstitutionOpportunityChangeSignals({
+      institutions: 'SNU',
+      limit: 10,
+    });
+
+    expect(response.summary.total).toBeGreaterThan(0);
+    expect(response.signals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          institutionId: 'SNU',
+        }),
+      ]),
+    );
+
+    if (scholarshipSection?.links.length) {
+      expect(response.signals).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            changeType: 'updated',
+            serviceType: 'scholarship',
+          }),
+        ]),
+      );
+    }
+  });
+
   it('builds a live today workspace view from cached snapshots', async () => {
     await menuService.getWeeklyMenu();
     await noticeService.getNotices(1, 5);
@@ -714,11 +791,17 @@ describeLive('Live Integration Smoke', () => {
         updatedOpportunities: expect.any(Number),
         removedOpportunities: expect.any(Number),
         closingSoonOpportunities: expect.any(Number),
+        newInstitutionOpportunities: expect.any(Number),
+        updatedInstitutionOpportunities: expect.any(Number),
+        removedInstitutionOpportunities: expect.any(Number),
       }),
     );
     expect(response.sections.staleSources.signals).toEqual(expect.any(Array));
     expect(response.sections.missingSources.signals).toEqual(expect.any(Array));
     expect(response.sections.upcomingDeadlines.signals).toEqual(expect.any(Array));
+    expect(response.sections.newInstitutionOpportunities.signals).toEqual(
+      expect.any(Array),
+    );
   });
 
   it('builds a live company brief from cached job and content snapshots', async () => {

@@ -14,6 +14,11 @@ import {
   GetOpportunityChangeSignalsUseCase,
 } from './application/use-cases/get-opportunity-change-signals.use-case';
 import { OpportunityChangeSignalsResponseDto } from './dto/opportunity-change-signals.response.dto';
+import {
+  GetInstitutionOpportunityChangeSignalsQuery,
+  GetInstitutionOpportunityChangeSignalsUseCase,
+} from './application/use-cases/get-institution-opportunity-change-signals.use-case';
+import { InstitutionOpportunityChangeSignalsResponseDto } from './dto/institution-opportunity-change-signals.response.dto';
 
 @Injectable()
 export class SignalsService {
@@ -21,6 +26,7 @@ export class SignalsService {
     private readonly getSourceFreshnessSignalsUseCase: GetSourceFreshnessSignalsUseCase,
     private readonly getUpcomingOpportunitySignalsUseCase: GetUpcomingOpportunitySignalsUseCase,
     private readonly getOpportunityChangeSignalsUseCase: GetOpportunityChangeSignalsUseCase,
+    private readonly getInstitutionOpportunityChangeSignalsUseCase: GetInstitutionOpportunityChangeSignalsUseCase,
   ) {}
 
   async getSourceFreshnessSignals(
@@ -39,5 +45,11 @@ export class SignalsService {
     query: GetOpportunityChangeSignalsQuery,
   ): Promise<OpportunityChangeSignalsResponseDto> {
     return this.getOpportunityChangeSignalsUseCase.execute(query);
+  }
+
+  async getInstitutionOpportunityChangeSignals(
+    query: GetInstitutionOpportunityChangeSignalsQuery,
+  ): Promise<InstitutionOpportunityChangeSignalsResponseDto> {
+    return this.getInstitutionOpportunityChangeSignalsUseCase.execute(query);
   }
 }

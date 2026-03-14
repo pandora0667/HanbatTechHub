@@ -25,6 +25,9 @@ export class GetRadarWorkspaceUseCase {
       updatedOpportunities,
       removedOpportunities,
       upcomingDeadlines,
+      newInstitutionOpportunities,
+      updatedInstitutionOpportunities,
+      removedInstitutionOpportunities,
     ] = await Promise.all([
       this.signalsService.getSourceFreshnessSignals({
         status: 'stale',
@@ -51,6 +54,21 @@ export class GetRadarWorkspaceUseCase {
         days: query.deadlineWindowDays,
         limit: query.deadlineLimit,
       }),
+      this.signalsService.getInstitutionOpportunityChangeSignals({
+        institutions: query.institutions,
+        changeType: 'new',
+        limit: query.changeLimit,
+      }),
+      this.signalsService.getInstitutionOpportunityChangeSignals({
+        institutions: query.institutions,
+        changeType: 'updated',
+        limit: query.changeLimit,
+      }),
+      this.signalsService.getInstitutionOpportunityChangeSignals({
+        institutions: query.institutions,
+        changeType: 'removed',
+        limit: query.changeLimit,
+      }),
     ]);
     const generatedAt = new Date().toISOString();
     const snapshots = [
@@ -58,6 +76,9 @@ export class GetRadarWorkspaceUseCase {
       updatedOpportunities.snapshot,
       removedOpportunities.snapshot,
       upcomingDeadlines.snapshot,
+      newInstitutionOpportunities.snapshot,
+      updatedInstitutionOpportunities.snapshot,
+      removedInstitutionOpportunities.snapshot,
     ].filter(
       (snapshot): snapshot is SnapshotMetadata => snapshot !== undefined,
     );
@@ -83,6 +104,9 @@ export class GetRadarWorkspaceUseCase {
         updatedOpportunities,
         removedOpportunities,
         upcomingDeadlines,
+        newInstitutionOpportunities,
+        updatedInstitutionOpportunities,
+        removedInstitutionOpportunities,
       }),
       sections: {
         staleSources: limitedStaleSources,
@@ -91,6 +115,9 @@ export class GetRadarWorkspaceUseCase {
         updatedOpportunities,
         removedOpportunities,
         upcomingDeadlines,
+        newInstitutionOpportunities,
+        updatedInstitutionOpportunities,
+        removedInstitutionOpportunities,
       },
     };
   }

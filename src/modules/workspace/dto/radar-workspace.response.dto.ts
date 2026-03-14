@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SnapshotDto } from '../../../common/dto/snapshot.dto';
+import { InstitutionOpportunityChangeSignalsResponseDto } from '../../signals/dto/institution-opportunity-change-signals.response.dto';
 import { OpportunityChangeSignalsResponseDto } from '../../signals/dto/opportunity-change-signals.response.dto';
 import { SourceFreshnessSignalsResponseDto } from '../../signals/dto/source-freshness-signals.response.dto';
 import { UpcomingOpportunitySignalsResponseDto } from '../../signals/dto/upcoming-opportunity-signals.response.dto';
@@ -22,6 +23,15 @@ class RadarWorkspaceOverviewDto {
 
   @ApiProperty()
   closingSoonOpportunities: number;
+
+  @ApiProperty()
+  newInstitutionOpportunities: number;
+
+  @ApiProperty()
+  updatedInstitutionOpportunities: number;
+
+  @ApiProperty()
+  removedInstitutionOpportunities: number;
 }
 
 class RadarWorkspaceSectionsDto {
@@ -42,6 +52,15 @@ class RadarWorkspaceSectionsDto {
 
   @ApiProperty({ type: UpcomingOpportunitySignalsResponseDto })
   upcomingDeadlines: UpcomingOpportunitySignalsResponseDto;
+
+  @ApiProperty({ type: InstitutionOpportunityChangeSignalsResponseDto })
+  newInstitutionOpportunities: InstitutionOpportunityChangeSignalsResponseDto;
+
+  @ApiProperty({ type: InstitutionOpportunityChangeSignalsResponseDto })
+  updatedInstitutionOpportunities: InstitutionOpportunityChangeSignalsResponseDto;
+
+  @ApiProperty({ type: InstitutionOpportunityChangeSignalsResponseDto })
+  removedInstitutionOpportunities: InstitutionOpportunityChangeSignalsResponseDto;
 }
 
 export class RadarWorkspaceResponseDto {

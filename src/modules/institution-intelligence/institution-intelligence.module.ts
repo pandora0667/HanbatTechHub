@@ -43,8 +43,10 @@ import { InstitutionIntelligenceService } from './institution-intelligence.servi
   ],
   exports: [
     INSTITUTION_DISCOVERY_REPOSITORY,
+    GetInstitutionDiscoveryUseCase,
     GetInstitutionOpportunitiesUseCase,
     GetInstitutionOpportunityBoardUseCase,
+    InstitutionOpportunityBuilderService,
   ],
 })
 export class InstitutionIntelligenceModule {}

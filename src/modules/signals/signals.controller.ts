@@ -7,6 +7,8 @@ import { GetUpcomingOpportunitySignalsQueryDto } from './dto/get-upcoming-opport
 import { UpcomingOpportunitySignalsResponseDto } from './dto/upcoming-opportunity-signals.response.dto';
 import { GetOpportunityChangeSignalsQueryDto } from './dto/get-opportunity-change-signals-query.dto';
 import { OpportunityChangeSignalsResponseDto } from './dto/opportunity-change-signals.response.dto';
+import { GetInstitutionOpportunityChangeSignalsQueryDto } from './dto/get-institution-opportunity-change-signals-query.dto';
+import { InstitutionOpportunityChangeSignalsResponseDto } from './dto/institution-opportunity-change-signals.response.dto';
 
 @ApiTags('signals')
 @Controller('signals')
@@ -56,5 +58,20 @@ export class SignalsController {
     @Query() query: GetOpportunityChangeSignalsQueryDto,
   ): Promise<OpportunityChangeSignalsResponseDto> {
     return this.signalsService.getOpportunityChangeSignals(query);
+  }
+
+  @Get('institutions/opportunities/changes')
+  @ApiOperation({
+    summary: 'institution opportunity 신규/수정/삭제 변화 신호 조회',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'institution opportunity 변화 신호 목록',
+    type: InstitutionOpportunityChangeSignalsResponseDto,
+  })
+  async getInstitutionOpportunityChangeSignals(
+    @Query() query: GetInstitutionOpportunityChangeSignalsQueryDto,
+  ): Promise<InstitutionOpportunityChangeSignalsResponseDto> {
+    return this.signalsService.getInstitutionOpportunityChangeSignals(query);
   }
 }

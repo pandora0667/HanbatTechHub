@@ -9,6 +9,7 @@ describe('GetRadarWorkspaceUseCase', () => {
     getSourceFreshnessSignals: jest.fn(),
     getOpportunityChangeSignals: jest.fn(),
     getUpcomingOpportunitySignals: jest.fn(),
+    getInstitutionOpportunityChangeSignals: jest.fn(),
   };
   const workspaceSectionBuilderService = {
     limitFreshnessSignals: jest.fn(),
@@ -117,6 +118,43 @@ describe('GetRadarWorkspaceUseCase', () => {
         sourceIds: ['opportunity.jobs.naver'],
       },
     });
+    signalsService.getInstitutionOpportunityChangeSignals
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 2, created: 2, updated: 0, removed: 0 },
+        signals: [{ opportunityId: 'i1' }, { opportunityId: 'i2' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-15T00:00:00.000Z',
+          ttlSeconds: 86400,
+          confidence: 0.72,
+          sourceIds: ['institution.snu.discovery'],
+        },
+      })
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 1, created: 0, updated: 1, removed: 0 },
+        signals: [{ opportunityId: 'i3' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-15T00:00:00.000Z',
+          ttlSeconds: 86400,
+          confidence: 0.72,
+          sourceIds: ['institution.snu.discovery'],
+        },
+      })
+      .mockResolvedValueOnce({
+        generatedAt: '2026-03-14T00:00:00.000Z',
+        summary: { total: 1, created: 0, updated: 0, removed: 1 },
+        signals: [{ opportunityId: 'i4' }],
+        snapshot: {
+          collectedAt: '2026-03-14T00:00:00.000Z',
+          staleAt: '2026-03-15T00:00:00.000Z',
+          ttlSeconds: 86400,
+          confidence: 0.72,
+          sourceIds: ['institution.snu.discovery'],
+        },
+      });
 
     const result = await useCase.execute({
       company: 'NAVER',
@@ -161,6 +199,27 @@ describe('GetRadarWorkspaceUseCase', () => {
       days: 7,
       limit: 4,
     });
+    expect(
+      signalsService.getInstitutionOpportunityChangeSignals,
+    ).toHaveBeenNthCalledWith(1, {
+      institutions: undefined,
+      changeType: 'new',
+      limit: 5,
+    });
+    expect(
+      signalsService.getInstitutionOpportunityChangeSignals,
+    ).toHaveBeenNthCalledWith(2, {
+      institutions: undefined,
+      changeType: 'updated',
+      limit: 5,
+    });
+    expect(
+      signalsService.getInstitutionOpportunityChangeSignals,
+    ).toHaveBeenNthCalledWith(3, {
+      institutions: undefined,
+      changeType: 'removed',
+      limit: 5,
+    });
     expect(result.overview).toEqual({
       staleSources: 1,
       missingSources: 1,
@@ -168,6 +227,9 @@ describe('GetRadarWorkspaceUseCase', () => {
       updatedOpportunities: 2,
       removedOpportunities: 1,
       closingSoonOpportunities: 4,
+      newInstitutionOpportunities: 2,
+      updatedInstitutionOpportunities: 1,
+      removedInstitutionOpportunities: 1,
     });
     expect(result.sections.staleSources.signals).toHaveLength(1);
     expect(result.sections.missingSources.signals).toHaveLength(1);
@@ -175,7 +237,7 @@ describe('GetRadarWorkspaceUseCase', () => {
     expect(missingSignals.signals).toHaveLength(1);
     expect(result.snapshot).toEqual(
       expect.objectContaining({
-        sourceIds: ['opportunity.jobs.naver'],
+        sourceIds: ['institution.snu.discovery', 'opportunity.jobs.naver'],
       }),
     );
   });

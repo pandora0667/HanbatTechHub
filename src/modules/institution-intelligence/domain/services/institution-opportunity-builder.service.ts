@@ -6,6 +6,7 @@ import {
 import { InstitutionRegistryEntry } from '../../constants/institution-registry.constant';
 import { InstitutionSourceCatalogEntry } from '../../data/institution-source-catalog.data';
 import { InstitutionDiscoveryResponseDto } from '../../dto/institution.response.dto';
+import { InstitutionDiscoverySnapshot } from '../types/institution-discovery.type';
 import {
   InstitutionOpportunityCollection,
   InstitutionOpportunityItem,
@@ -18,12 +19,49 @@ export class InstitutionOpportunityBuilderService {
     discovery: InstitutionDiscoveryResponseDto,
     catalog: InstitutionSourceCatalogEntry[],
   ): InstitutionOpportunityCollection {
+    return this.buildFromSections(
+      registryEntry,
+      discovery.sections,
+      discovery.snapshot,
+      discovery.summary.mode as InstitutionOpportunityDiscoveryMode,
+      catalog,
+    );
+  }
+
+  buildFromSnapshot(
+    registryEntry: InstitutionRegistryEntry,
+    snapshot: InstitutionDiscoverySnapshot,
+    snapshotMetadata: InstitutionOpportunityCollection['snapshot'],
+    catalog: InstitutionSourceCatalogEntry[],
+  ): InstitutionOpportunityCollection {
+    return this.buildFromSections(
+      registryEntry,
+      snapshot.sections.map((section) => ({
+        ...section,
+        linkCount: section.links.length,
+      })),
+      snapshotMetadata,
+      snapshot.mode as InstitutionOpportunityDiscoveryMode,
+      catalog,
+    );
+  }
+
+  private buildFromSections(
+    registryEntry: InstitutionRegistryEntry,
+    sections: Array<{
+      serviceType: InstitutionDiscoveryResponseDto['sections'][number]['serviceType'];
+      links: InstitutionDiscoveryResponseDto['sections'][number]['links'];
+    }>,
+    snapshot: InstitutionDiscoveryResponseDto['snapshot'],
+    mode: InstitutionOpportunityDiscoveryMode,
+    catalog: InstitutionSourceCatalogEntry[],
+  ): InstitutionOpportunityCollection {
     const items = new Map<string, InstitutionOpportunityItem>();
     const catalogByServiceType = new Map(
       catalog.map((entry) => [entry.serviceType, entry]),
     );
 
-    for (const section of discovery.sections) {
+    for (const section of sections) {
       if (!INSTITUTION_OPPORTUNITY_SERVICE_TYPES.includes(section.serviceType)) {
         continue;
       }
@@ -49,8 +87,8 @@ export class InstitutionOpportunityBuilderService {
           pageUrl: this.normalizeUrl(link.pageUrl),
           matchedKeywords: [...link.matchedKeywords],
           score: link.score,
-          discoveryMode: discovery.summary.mode as InstitutionOpportunityDiscoveryMode,
-          sourceId: discovery.snapshot.sourceIds[0],
+          discoveryMode: mode,
+          sourceId: snapshot.sourceIds[0],
         });
       }
     }
@@ -63,8 +101,8 @@ export class InstitutionOpportunityBuilderService {
 
         return left.title.localeCompare(right.title, 'ko');
       }),
-      snapshot: discovery.snapshot,
-      mode: discovery.summary.mode as InstitutionOpportunityDiscoveryMode,
+      snapshot,
+      mode,
     };
   }
 

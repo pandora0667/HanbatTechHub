@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { COMPANY_ENUM } from '../../jobs/constants/job-codes.constant';
 import { CompanyType } from '../../jobs/interfaces/job-posting.interface';
 
@@ -64,4 +64,12 @@ export class GetRadarWorkspaceQueryDto {
   @Min(1)
   @Max(30)
   deadlineWindowDays?: number = 7;
+
+  @ApiPropertyOptional({
+    description: 'institution 필터(csv). institution 변화 신호 섹션에만 적용',
+    example: 'HANBAT,SNU,INU',
+  })
+  @IsOptional()
+  @IsString()
+  institutions?: string;
 }
