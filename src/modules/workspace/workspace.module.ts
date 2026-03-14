@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BlogModule } from '../blog/blog.module';
+import { InstitutionIntelligenceModule } from '../institution-intelligence/institution-intelligence.module';
 import { NoticeModule } from '../notice/notice.module';
 import { SignalsModule } from '../signals/signals.module';
 import { WorkspaceSectionBuilderService } from './application/services/workspace-section-builder.service';
@@ -14,7 +15,7 @@ import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';
 
 @Module({
-  imports: [SignalsModule, BlogModule, NoticeModule],
+  imports: [SignalsModule, BlogModule, NoticeModule, InstitutionIntelligenceModule],
   controllers: [WorkspaceController],
   providers: [
     WorkspaceService,

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BlogPost } from '../../../blog/interfaces/blog.interface';
+import { InstitutionOpportunitiesResponseDto } from '../../../institution-intelligence/dto/institution.response.dto';
 import { NoticeSummary } from '../../../notice/domain/models/notice.model';
 import {
   WorkspaceActionItem,
@@ -114,6 +115,22 @@ export class WorkspaceActionBuilderService {
     };
   }
 
+  fromInstitutionOpportunity(
+    item: InstitutionOpportunitiesResponseDto['items'][number],
+  ): WorkspaceActionItem {
+    return {
+      id: `institution-opportunity:${item.id}`,
+      type: 'check',
+      priority: this.mapInstitutionOpportunityPriority(item.serviceType),
+      sourceKind: 'institution',
+      title: item.title,
+      subtitle: `${item.institutionName} · ${this.labelInstitutionServiceType(item.serviceType)}`,
+      reason: `${item.institutionName}에서 확인할 ${this.labelInstitutionServiceType(item.serviceType)} 정보입니다.`,
+      url: item.url,
+      labels: [item.institutionId, item.serviceType, item.discoveryMode],
+    };
+  }
+
   rank(items: WorkspaceActionItem[], limit: number): WorkspaceActionItem[] {
     const deduped = new Map<string, WorkspaceActionItem>();
 
@@ -182,5 +199,51 @@ export class WorkspaceActionBuilderService {
     }
 
     return item.id;
+  }
+
+  private mapInstitutionOpportunityPriority(
+    serviceType: InstitutionOpportunitiesResponseDto['items'][number]['serviceType'],
+  ): WorkspaceActionPriority {
+    switch (serviceType) {
+      case 'scholarship':
+      case 'career_program':
+      case 'job_fair':
+      case 'field_practice':
+      case 'internship':
+        return 'high';
+      case 'extracurricular':
+      case 'mentoring':
+      case 'startup':
+        return 'medium';
+      default:
+        return 'low';
+    }
+  }
+
+  private labelInstitutionServiceType(
+    serviceType: InstitutionOpportunitiesResponseDto['items'][number]['serviceType'],
+  ): string {
+    switch (serviceType) {
+      case 'scholarship':
+        return '장학';
+      case 'career_program':
+        return '취업지원';
+      case 'job_fair':
+        return '채용행사';
+      case 'field_practice':
+        return '현장실습';
+      case 'internship':
+        return '인턴십';
+      case 'extracurricular':
+        return '비교과';
+      case 'mentoring':
+        return '멘토링';
+      case 'startup':
+        return '창업지원';
+      case 'global_program':
+        return '국제교류';
+      default:
+        return serviceType;
+    }
   }
 }

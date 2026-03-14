@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class GetTodayWorkspaceQueryDto {
   @ApiPropertyOptional({
@@ -67,4 +67,25 @@ export class GetTodayWorkspaceQueryDto {
   @Min(1)
   @Max(30)
   deadlineWindowDays?: number = 7;
+
+  @ApiPropertyOptional({
+    description: 'institution opportunities 섹션 최대 개수',
+    default: 5,
+    minimum: 1,
+    maximum: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  institutionLimit?: number = 5;
+
+  @ApiPropertyOptional({
+    description: 'institution 필터(csv). 기본값은 wave-1 학교들',
+    example: 'HANBAT,SNU,INU',
+  })
+  @IsOptional()
+  @IsString()
+  institutions?: string;
 }

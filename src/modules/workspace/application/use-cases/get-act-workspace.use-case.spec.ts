@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { BLOG_POST_REPOSITORY } from '../../../blog/application/ports/blog-post.repository';
 import { BLOG_SOURCE_CATALOG } from '../../../blog/application/ports/blog-source-catalog';
+import { GetInstitutionOpportunityBoardUseCase } from '../../../institution-intelligence/application/use-cases/get-institution-opportunity-board.use-case';
 import { NOTICE_CACHE_REPOSITORY } from '../../../notice/application/ports/notice-cache.repository';
 import { SignalsService } from '../../../signals/signals.service';
 import { GetActWorkspaceUseCase } from './get-act-workspace.use-case';
@@ -22,6 +23,9 @@ describe('GetActWorkspaceUseCase', () => {
   const noticeCacheRepository = {
     getNoticeGroup: jest.fn(),
     getLastUpdate: jest.fn(),
+  };
+  const getInstitutionOpportunityBoardUseCase = {
+    execute: jest.fn(),
   };
 
   let useCase: GetActWorkspaceUseCase;
@@ -49,6 +53,10 @@ describe('GetActWorkspaceUseCase', () => {
         {
           provide: NOTICE_CACHE_REPOSITORY,
           useValue: noticeCacheRepository,
+        },
+        {
+          provide: GetInstitutionOpportunityBoardUseCase,
+          useValue: getInstitutionOpportunityBoardUseCase,
         },
       ],
     }).compile();
@@ -157,6 +165,54 @@ describe('GetActWorkspaceUseCase', () => {
     noticeCacheRepository.getLastUpdate.mockResolvedValue(
       '2026-03-14T00:10:00.000Z',
     );
+    getInstitutionOpportunityBoardUseCase.execute.mockResolvedValue({
+      generatedAt: '2026-03-14T00:12:00.000Z',
+      summary: {
+        totalOpportunities: 1,
+        serviceTypesCovered: 1,
+        liveInstitutions: 1,
+        fallbackInstitutions: 0,
+      },
+      snapshot: {
+        collectedAt: '2026-03-14T00:11:00.000Z',
+        staleAt: '2026-03-15T00:11:00.000Z',
+        ttlSeconds: 86400,
+        confidence: 0.72,
+        sourceIds: ['institution.snu.discovery'],
+      },
+      meta: {
+        totalCount: 1,
+        currentPage: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        limit: 3,
+        snapshot: {
+          collectedAt: '2026-03-14T00:11:00.000Z',
+          staleAt: '2026-03-15T00:11:00.000Z',
+          ttlSeconds: 86400,
+          confidence: 0.72,
+          sourceIds: ['institution.snu.discovery'],
+        },
+      },
+      items: [
+        {
+          id: 'inst-1',
+          institutionId: 'SNU',
+          institutionName: '서울대학교',
+          region: '수도권',
+          serviceType: 'scholarship',
+          title: '장학금·학자금',
+          url: 'https://example.com/snu-scholarship',
+          pageUrl: 'https://example.com',
+          matchedKeywords: ['장학'],
+          score: 4,
+          discoveryMode: 'live',
+          sourceId: 'institution.snu.discovery',
+        },
+      ],
+      sources: [],
+    });
     blogSourceCatalog.listCodes.mockReturnValue(['KAKAO_ENTERPRISE']);
     blogPostRepository.getPostsForCompanies.mockResolvedValue([
       {
@@ -184,9 +240,9 @@ describe('GetActWorkspaceUseCase', () => {
     });
 
     expect(result.overview).toEqual({
-      totalActions: 5,
+      totalActions: 6,
       urgent: 1,
-      high: 1,
+      high: 2,
       medium: 2,
       low: 1,
       applyNow: 1,
@@ -199,6 +255,7 @@ describe('GetActWorkspaceUseCase', () => {
       }),
     );
     expect(result.sections.institutionChecks).toHaveLength(1);
+    expect(result.sections.institutionOpportunities).toHaveLength(1);
     expect(result.sections.readingQueue).toHaveLength(1);
   });
 });

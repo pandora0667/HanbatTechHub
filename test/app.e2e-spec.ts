@@ -202,6 +202,7 @@ describe('AppController (e2e)', () => {
           upcomingOpportunities: expect.any(Number),
           latestContentItems: expect.any(Number),
           latestNoticeItems: expect.any(Number),
+          institutionOpportunityItems: expect.any(Number),
         }),
         sections: expect.objectContaining({
           freshness: expect.any(Object),
@@ -209,6 +210,7 @@ describe('AppController (e2e)', () => {
           upcomingOpportunities: expect.any(Object),
           latestContent: expect.any(Object),
           latestNotices: expect.any(Object),
+          institutionOpportunities: expect.any(Object),
         }),
       }),
     );
@@ -587,6 +589,7 @@ describe('AppController (e2e)', () => {
           applyNow: expect.any(Array),
           reviewChanges: expect.any(Array),
           institutionChecks: expect.any(Array),
+          institutionOpportunities: expect.any(Array),
           readingQueue: expect.any(Array),
         }),
         actions: expect.any(Array),

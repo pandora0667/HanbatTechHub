@@ -685,8 +685,12 @@ describeLive('Live Integration Smoke', () => {
 
     expect(response.overview.latestContentItems).toBeGreaterThan(0);
     expect(response.overview.latestNoticeItems).toBeGreaterThan(0);
+    expect(response.overview.institutionOpportunityItems).toBeGreaterThan(0);
     expect(response.sections.latestContent.items.length).toBeGreaterThan(0);
     expect(response.sections.latestNotices.items.length).toBeGreaterThan(0);
+    expect(response.sections.institutionOpportunities.items.length).toBeGreaterThan(
+      0,
+    );
     expect(response.sections.freshness.summary.total).toBeGreaterThan(0);
   });
 

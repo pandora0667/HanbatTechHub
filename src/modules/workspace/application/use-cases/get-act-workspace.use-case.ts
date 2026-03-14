@@ -24,6 +24,7 @@ import {
   NOTICE_SOURCE_ID,
 } from '../../../notice/constants/notice.constant';
 import { SignalsService } from '../../../signals/signals.service';
+import { GetInstitutionOpportunityBoardUseCase } from '../../../institution-intelligence/application/use-cases/get-institution-opportunity-board.use-case';
 import { GetActWorkspaceQueryDto } from '../../dto/get-act-workspace-query.dto';
 import { ActWorkspaceResponseDto } from '../../dto/act-workspace.response.dto';
 import { ActWorkspaceOverviewService } from '../../domain/services/act-workspace-overview.service';
@@ -33,6 +34,7 @@ import { WorkspaceActionBuilderService } from '../../domain/services/workspace-a
 export class GetActWorkspaceUseCase {
   constructor(
     private readonly signalsService: SignalsService,
+    private readonly getInstitutionOpportunityBoardUseCase: GetInstitutionOpportunityBoardUseCase,
     @Inject(BLOG_POST_REPOSITORY)
     private readonly blogPostRepository: BlogPostRepository,
     @Inject(BLOG_SOURCE_CATALOG)
@@ -51,6 +53,7 @@ export class GetActWorkspaceUseCase {
       newOpportunities,
       updatedOpportunities,
       institutionChecks,
+      institutionOpportunities,
       readingQueue,
     ] = await Promise.all([
       this.signalsService.getUpcomingOpportunitySignals({
@@ -66,6 +69,10 @@ export class GetActWorkspaceUseCase {
         limit: query.updatedJobLimit,
       }),
       this.getInstitutionChecks(query.noticeLimit ?? 3),
+      this.getInstitutionOpportunityActions(
+        query.institutionLimit ?? 3,
+        query.institutions,
+      ),
       this.getReadingQueue(query.contentLimit ?? 3),
     ]);
     const applyNow = upcomingDeadlines.signals.map((signal) =>
@@ -82,6 +89,9 @@ export class GetActWorkspaceUseCase {
     const institutionActions = institutionChecks.items.map((notice) =>
       this.workspaceActionBuilderService.fromNotice(notice),
     );
+    const institutionOpportunityActions = institutionOpportunities.items.map((item) =>
+      this.workspaceActionBuilderService.fromInstitutionOpportunity(item),
+    );
     const contentActions = readingQueue.items.map((post) =>
       this.workspaceActionBuilderService.fromContent(post),
     );
@@ -90,6 +100,7 @@ export class GetActWorkspaceUseCase {
         ...applyNow,
         ...reviewChanges,
         ...institutionActions,
+        ...institutionOpportunityActions,
         ...contentActions,
       ],
       query.limit ?? 12,
@@ -104,6 +115,7 @@ export class GetActWorkspaceUseCase {
           newOpportunities.snapshot,
           updatedOpportunities.snapshot,
           institutionChecks.snapshot,
+          institutionOpportunities.snapshot,
           readingQueue.snapshot,
         ].filter((snapshot): snapshot is SnapshotMetadata => snapshot !== undefined),
       ),
@@ -112,6 +124,7 @@ export class GetActWorkspaceUseCase {
         applyNow,
         reviewChanges,
         institutionChecks: institutionActions,
+        institutionOpportunities: institutionOpportunityActions,
         readingQueue: contentActions,
       },
       actions,
@@ -171,5 +184,14 @@ export class GetActWorkspaceUseCase {
         ),
       ),
     };
+  }
+
+  private getInstitutionOpportunityActions(limit: number, institutions?: string) {
+    return this.getInstitutionOpportunityBoardUseCase.execute({
+      institutions,
+      rolloutWave: institutions ? undefined : 1,
+      limit,
+      page: 1,
+    });
   }
 }

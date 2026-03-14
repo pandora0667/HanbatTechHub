@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BlogResponseDto } from '../../../blog/dto/blog-response.dto';
+import { InstitutionOpportunitiesResponseDto } from '../../../institution-intelligence/dto/institution.response.dto';
 import { NoticeListResponseDto } from '../../../notice/dto/notice.dto';
 import { OpportunityChangeSignalsResponseDto } from '../../../signals/dto/opportunity-change-signals.response.dto';
 import { SourceFreshnessSignalsResponseDto } from '../../../signals/dto/source-freshness-signals.response.dto';
@@ -11,6 +12,7 @@ interface BuildTodayWorkspaceOverviewInput {
   upcomingOpportunities: UpcomingOpportunitySignalsResponseDto;
   latestContent: BlogResponseDto;
   latestNotices: NoticeListResponseDto;
+  institutionOpportunities: InstitutionOpportunitiesResponseDto;
 }
 
 @Injectable()
@@ -23,6 +25,7 @@ export class TodayWorkspaceOverviewService {
       upcomingOpportunities: input.upcomingOpportunities.summary.total,
       latestContentItems: input.latestContent.items.length,
       latestNoticeItems: input.latestNotices.items.length,
+      institutionOpportunityItems: input.institutionOpportunities.items.length,
     };
   }
 }

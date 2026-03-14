@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { GetInstitutionOpportunityBoardUseCase } from '../../../institution-intelligence/application/use-cases/get-institution-opportunity-board.use-case';
 import { SignalsService } from '../../../signals/signals.service';
 import { GetTodayWorkspaceUseCase } from './get-today-workspace.use-case';
 import { TodayWorkspaceOverviewService } from '../../domain/services/today-workspace-overview.service';
@@ -13,6 +14,9 @@ describe('GetTodayWorkspaceUseCase', () => {
   const workspaceSectionBuilderService = {
     getLatestContent: jest.fn(),
     getLatestNotices: jest.fn(),
+  };
+  const getInstitutionOpportunityBoardUseCase = {
+    execute: jest.fn(),
   };
 
   let useCase: GetTodayWorkspaceUseCase;
@@ -31,6 +35,10 @@ describe('GetTodayWorkspaceUseCase', () => {
         {
           provide: WorkspaceSectionBuilderService,
           useValue: workspaceSectionBuilderService,
+        },
+        {
+          provide: GetInstitutionOpportunityBoardUseCase,
+          useValue: getInstitutionOpportunityBoardUseCase,
         },
       ],
     }).compile();
@@ -118,6 +126,39 @@ describe('GetTodayWorkspaceUseCase', () => {
         },
       },
     });
+    getInstitutionOpportunityBoardUseCase.execute.mockResolvedValue({
+      generatedAt: '2026-03-13T00:12:00.000Z',
+      summary: {
+        totalOpportunities: 2,
+        serviceTypesCovered: 2,
+        liveInstitutions: 2,
+        fallbackInstitutions: 0,
+      },
+      snapshot: {
+        collectedAt: '2026-03-13T00:11:00.000Z',
+        staleAt: '2026-03-14T00:11:00.000Z',
+        ttlSeconds: 86400,
+        confidence: 0.72,
+        sourceIds: ['institution.hanbat.discovery', 'institution.snu.discovery'],
+      },
+      items: [{ id: 'a' }, { id: 'b' }],
+      meta: {
+        totalCount: 2,
+        currentPage: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        limit: 5,
+        snapshot: {
+          collectedAt: '2026-03-13T00:11:00.000Z',
+          staleAt: '2026-03-14T00:11:00.000Z',
+          ttlSeconds: 86400,
+          confidence: 0.72,
+          sourceIds: ['institution.hanbat.discovery', 'institution.snu.discovery'],
+        },
+      },
+      sources: [],
+    });
 
     const result = await useCase.execute({
       contentLimit: 2,
@@ -136,6 +177,12 @@ describe('GetTodayWorkspaceUseCase', () => {
     });
     expect(workspaceSectionBuilderService.getLatestContent).toHaveBeenCalledWith(2);
     expect(workspaceSectionBuilderService.getLatestNotices).toHaveBeenCalledWith(1);
+    expect(getInstitutionOpportunityBoardUseCase.execute).toHaveBeenCalledWith({
+      institutions: undefined,
+      rolloutWave: 1,
+      limit: 5,
+      page: 1,
+    });
     expect(result.overview).toEqual({
       staleSources: 1,
       missingSources: 1,
@@ -143,12 +190,15 @@ describe('GetTodayWorkspaceUseCase', () => {
       upcomingOpportunities: 2,
       latestContentItems: 2,
       latestNoticeItems: 1,
+      institutionOpportunityItems: 2,
     });
     expect(result.snapshot).toEqual(
       expect.objectContaining({
         sourceIds: expect.arrayContaining([
           'content.blog.toss',
           'institution.hanbat.notice',
+          'institution.hanbat.discovery',
+          'institution.snu.discovery',
           'opportunity.jobs.naver',
         ]),
       }),

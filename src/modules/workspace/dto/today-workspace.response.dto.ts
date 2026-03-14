@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SnapshotDto } from '../../../common/dto/snapshot.dto';
 import { BlogResponseDto } from '../../blog/dto/blog-response.dto';
+import { InstitutionOpportunitiesResponseDto } from '../../institution-intelligence/dto/institution.response.dto';
 import { NoticeListResponseDto } from '../../notice/dto/notice.dto';
 import { OpportunityChangeSignalsResponseDto } from '../../signals/dto/opportunity-change-signals.response.dto';
 import { SourceFreshnessSignalsResponseDto } from '../../signals/dto/source-freshness-signals.response.dto';
@@ -24,6 +25,9 @@ class TodayWorkspaceOverviewDto {
 
   @ApiProperty()
   latestNoticeItems: number;
+
+  @ApiProperty()
+  institutionOpportunityItems: number;
 }
 
 class TodayWorkspaceSectionsDto {
@@ -41,6 +45,9 @@ class TodayWorkspaceSectionsDto {
 
   @ApiProperty({ type: NoticeListResponseDto })
   latestNotices: NoticeListResponseDto;
+
+  @ApiProperty({ type: InstitutionOpportunitiesResponseDto })
+  institutionOpportunities: InstitutionOpportunitiesResponseDto;
 }
 
 export class TodayWorkspaceResponseDto {

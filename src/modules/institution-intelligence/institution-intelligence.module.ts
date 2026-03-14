@@ -41,6 +41,10 @@ import { InstitutionIntelligenceService } from './institution-intelligence.servi
       useExisting: RedisInstitutionDiscoveryRepository,
     },
   ],
-  exports: [INSTITUTION_DISCOVERY_REPOSITORY],
+  exports: [
+    INSTITUTION_DISCOVERY_REPOSITORY,
+    GetInstitutionOpportunitiesUseCase,
+    GetInstitutionOpportunityBoardUseCase,
+  ],
 })
 export class InstitutionIntelligenceModule {}

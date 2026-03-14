@@ -70,6 +70,9 @@ class ActWorkspaceSectionsDto {
   institutionChecks: WorkspaceActionItemDto[];
 
   @ApiProperty({ type: [WorkspaceActionItemDto] })
+  institutionOpportunities: WorkspaceActionItemDto[];
+
+  @ApiProperty({ type: [WorkspaceActionItemDto] })
   readingQueue: WorkspaceActionItemDto[];
 }
 
