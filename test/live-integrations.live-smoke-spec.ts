@@ -50,6 +50,7 @@ import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpClientUtil } from '../src/modules/jobs/utils/http-client.util';
 import { JobPostingSearchService } from '../src/modules/jobs/domain/services/job-posting-search.service';
 import { JobPostingSnapshotReaderService } from '../src/modules/jobs/application/services/job-posting-snapshot-reader.service';
+import { JobMarketHistoryBuilderService } from '../src/modules/jobs/domain/services/job-market-history-builder.service';
 import { NaverCrawler } from '../src/modules/jobs/crawlers/naver.crawler';
 import { KakaoCrawler } from '../src/modules/jobs/crawlers/kakao.crawler';
 import { LineCrawler } from '../src/modules/jobs/crawlers/line.crawler';
@@ -272,6 +273,7 @@ describeLive('Live Integration Smoke', () => {
         RedisJobPostingCacheRepository,
         JobPostingSearchService,
         JobPostingSnapshotReaderService,
+        JobMarketHistoryBuilderService,
         {
           provide: JOB_POSTING_CACHE_REPOSITORY,
           useExisting: RedisJobPostingCacheRepository,
@@ -1148,9 +1150,21 @@ describeLive('Live Integration Smoke', () => {
     });
 
     expect(response.summary.totalOpenOpportunities).toBeGreaterThan(0);
+    expect(response.summary.historyPoints).toBeGreaterThan(0);
     expect(response.sections.topCompanies).toEqual(expect.any(Array));
     expect(response.sections.topSkills).toEqual(expect.any(Array));
     expect(response.sections.topFields).toEqual(expect.any(Array));
+    expect(response.sections.trends).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          historyPoints: expect.any(Number),
+        }),
+        timeline: expect.any(Array),
+        companyMomentum: expect.any(Array),
+        fieldMomentum: expect.any(Array),
+        skillMomentum: expect.any(Array),
+      }),
+    );
   });
 
   it('builds a live watchlist preview from cached snapshots only', async () => {

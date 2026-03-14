@@ -12,6 +12,7 @@ import { GetTechJobsUseCase } from '../application/use-cases/get-tech-jobs.use-c
 import { SyncJobCacheUseCase } from '../application/use-cases/sync-job-cache.use-case';
 import { InitializeJobsCacheUseCase } from '../application/use-cases/initialize-jobs-cache.use-case';
 import { JobPostingResponseMapper } from '../presentation/mappers/job-posting-response.mapper';
+import { JobMarketHistoryBuilderService } from '../domain/services/job-market-history-builder.service';
 import { JobCrawlerRegistryService } from '../infrastructure/services/job-crawler-registry.service';
 import { RedisJobPostingCacheRepository } from '../infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_CRAWLER_REGISTRY } from '../application/ports/job-crawler-registry';
@@ -66,6 +67,7 @@ describe('JobsService', () => {
         JobsService,
         JobPostingSearchService,
         JobPostingChangeDetectorService,
+        JobMarketHistoryBuilderService,
         JobCrawlerExecutionService,
         JobPostingCollectorService,
         GetCompanyJobsUseCase,

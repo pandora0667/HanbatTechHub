@@ -7,6 +7,7 @@ export const REDIS_KEYS = {
   JOBS_COMPANY: 'hbnu:jobs:company:', // 회사별 직무 (접두사)
   JOBS_LAST_UPDATE: 'hbnu:jobs:last-update', // 마지막 업데이트 시간
   JOBS_CHANGE_SIGNALS: 'hbnu:jobs:signals:changes',
+  JOBS_MARKET_HISTORY: 'hbnu:jobs:history:market',
 };
 
 /**
@@ -33,6 +34,37 @@ export const JOBS_FRESHNESS_TTL = parseInt(
  */
 export const JOBS_CHANGE_SIGNALS_TTL = parseInt(
   process.env.JOBS_CHANGE_SIGNALS_TTL || '604800',
+  10,
+);
+
+/**
+ * Job 시장 요약 히스토리 보관 길이
+ * 기본값: 최신 30개 스냅샷
+ */
+export const JOBS_MARKET_HISTORY_LIMIT = parseInt(
+  process.env.JOBS_MARKET_HISTORY_LIMIT || '30',
+  10,
+);
+
+/**
+ * Job 시장 요약 히스토리 TTL (초)
+ * 기본값: 90일
+ */
+export const JOBS_MARKET_HISTORY_TTL = parseInt(
+  process.env.JOBS_MARKET_HISTORY_TTL || '7776000',
+  10,
+);
+
+/**
+ * Job 시장 요약 히스토리에 저장할 필드/기술 상한
+ */
+export const JOBS_MARKET_HISTORY_FIELD_LIMIT = parseInt(
+  process.env.JOBS_MARKET_HISTORY_FIELD_LIMIT || '40',
+  10,
+);
+
+export const JOBS_MARKET_HISTORY_SKILL_LIMIT = parseInt(
+  process.env.JOBS_MARKET_HISTORY_SKILL_LIMIT || '80',
   10,
 );
 

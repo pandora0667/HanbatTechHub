@@ -5,6 +5,8 @@ import {
   JOBS_CACHE_TTL,
   JOBS_CHANGE_SIGNALS_TTL,
   JOBS_FRESHNESS_TTL,
+  JOBS_MARKET_HISTORY_LIMIT,
+  JOBS_MARKET_HISTORY_TTL,
   REDIS_KEYS,
 } from '../../constants/redis.constant';
 import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
@@ -18,6 +20,7 @@ import {
 } from '../../application/ports/job-posting-cache.repository';
 import { getJobSourceDescriptor } from '../../constants/job-source.constant';
 import { JobPostingChangeResult } from '../../domain/models/job-posting-change.model';
+import { JobMarketHistoryEntry } from '../../domain/models/job-market-history.model';
 
 @Injectable()
 export class RedisJobPostingCacheRepository
@@ -92,6 +95,32 @@ export class RedisJobPostingCacheRepository
       REDIS_KEYS.JOBS_CHANGE_SIGNALS,
       result,
       JOBS_CHANGE_SIGNALS_TTL,
+    );
+  }
+
+  async getJobMarketHistory(limit = JOBS_MARKET_HISTORY_LIMIT): Promise<JobMarketHistoryEntry[]> {
+    const history = await this.redisService.get<JobMarketHistoryEntry[]>(
+      REDIS_KEYS.JOBS_MARKET_HISTORY,
+    );
+
+    if (!Array.isArray(history)) {
+      return [];
+    }
+
+    return history.slice(0, limit);
+  }
+
+  async appendJobMarketHistory(entry: JobMarketHistoryEntry): Promise<void> {
+    const history = await this.getJobMarketHistory(JOBS_MARKET_HISTORY_LIMIT);
+    const nextHistory =
+      history[0]?.snapshot.collectedAt === entry.snapshot.collectedAt
+        ? [entry, ...history.slice(1)]
+        : [entry, ...history];
+
+    await this.redisService.set(
+      REDIS_KEYS.JOBS_MARKET_HISTORY,
+      nextHistory.slice(0, JOBS_MARKET_HISTORY_LIMIT),
+      JOBS_MARKET_HISTORY_TTL,
     );
   }
 

@@ -1,5 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { buildSnapshotMetadata } from '../../../../common/utils/snapshot.util';
+import { JOB_POSTING_CACHE_REPOSITORY } from '../../../jobs/application/ports/job-posting-cache.repository';
+import { JobMarketHistoryBuilderService } from '../../../jobs/domain/services/job-market-history-builder.service';
 import { JobPostingSnapshotReaderService } from '../../../jobs/application/services/job-posting-snapshot-reader.service';
 import { SignalsService } from '../../../signals/signals.service';
 import { SkillIntelligenceService } from '../../../skill-intelligence/skill-intelligence.service';
@@ -15,6 +17,9 @@ describe('GetMarketOverviewUseCase', () => {
     getOpportunityChangeSignals: jest.fn(),
     getUpcomingOpportunitySignals: jest.fn(),
     getSourceFreshnessSignals: jest.fn(),
+  };
+  const jobPostingCacheRepository = {
+    getJobMarketHistory: jest.fn(),
   };
   const skillIntelligenceService = {
     getSkillMap: jest.fn(),
@@ -38,6 +43,11 @@ describe('GetMarketOverviewUseCase', () => {
         {
           provide: JobPostingSnapshotReaderService,
           useValue: jobPostingSnapshotReaderService,
+        },
+        JobMarketHistoryBuilderService,
+        {
+          provide: JOB_POSTING_CACHE_REPOSITORY,
+          useValue: jobPostingCacheRepository,
         },
         {
           provide: SignalsService,
@@ -134,6 +144,25 @@ describe('GetMarketOverviewUseCase', () => {
         },
       ],
     });
+    jobPostingCacheRepository.getJobMarketHistory.mockResolvedValue([
+      {
+        snapshot: buildSnapshotMetadata({
+          collectedAt: '2026-03-10T00:00:00.000Z',
+          ttlSeconds: 43200,
+          confidence: 0.8,
+          sourceIds: ['opportunity.jobs.naver', 'opportunity.jobs.kakao'],
+        }),
+        summary: {
+          totalOpenOpportunities: 1,
+          companiesHiring: 1,
+          fieldsTracked: 1,
+          skillsTracked: 1,
+        },
+        companies: [{ company: 'NAVER', openJobs: 1, fields: 1, skills: 1 }],
+        fields: [{ field: 'Backend', openJobs: 1, companies: 1 }],
+        skills: [{ skill: 'TypeScript', demandCount: 1, companyCount: 1 }],
+      },
+    ]);
     skillIntelligenceService.getSkillMap.mockResolvedValue({
       summary: { totalJobs: 2, jobsWithSkills: 2, coverageRatio: 1, totalSkills: 2 },
       skills: [
@@ -158,6 +187,7 @@ describe('GetMarketOverviewUseCase', () => {
         newSignals: 1,
         updatedSignals: 1,
         closingSoonOpportunities: 1,
+        historyPoints: 2,
       }),
     );
     expect(result.sections.topCompanies[0]).toEqual(
@@ -167,6 +197,29 @@ describe('GetMarketOverviewUseCase', () => {
       }),
     );
     expect(result.sections.topSkills).toHaveLength(2);
+    expect(result.sections.trends).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          historyPoints: 2,
+          totalOpenOpportunitiesDelta: 1,
+          companiesHiringDelta: 1,
+        }),
+        timeline: expect.arrayContaining([
+          expect.objectContaining({
+            collectedAt: expect.any(String),
+            totalOpenOpportunities: expect.any(Number),
+          }),
+        ]),
+        companyMomentum: expect.arrayContaining([
+          expect.objectContaining({
+            name: expect.any(String),
+            delta: expect.any(Number),
+            direction: expect.any(String),
+          }),
+        ]),
+      }),
+    );
     expect(jobPostingSnapshotReaderService.getResolvedAllJobs).toHaveBeenCalled();
+    expect(jobPostingCacheRepository.getJobMarketHistory).toHaveBeenCalledWith(10);
   });
 });

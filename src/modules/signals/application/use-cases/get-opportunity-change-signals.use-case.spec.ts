@@ -20,6 +20,8 @@ describe('GetOpportunityChangeSignalsUseCase', () => {
     setAllJobs: jest.fn(),
     getJobChangeSignals: jest.fn(),
     setJobChangeSignals: jest.fn(),
+    getJobMarketHistory: jest.fn(),
+    appendJobMarketHistory: jest.fn(),
     getLastUpdate: jest.fn(),
     setLastUpdate: jest.fn(),
   };

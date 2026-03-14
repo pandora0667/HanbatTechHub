@@ -801,12 +801,23 @@ describe('AppController (e2e)', () => {
           freshSources: expect.any(Number),
           staleSources: expect.any(Number),
           missingSources: expect.any(Number),
+          historyPoints: expect.any(Number),
         }),
         sections: expect.objectContaining({
           topCompanies: expect.any(Array),
           topSkills: expect.any(Array),
           topFields: expect.any(Array),
           staleSources: expect.any(Array),
+          trends: expect.objectContaining({
+            summary: expect.objectContaining({
+              historyPoints: expect.any(Number),
+              totalOpenOpportunitiesDelta: expect.any(Number),
+            }),
+            timeline: expect.any(Array),
+            companyMomentum: expect.any(Array),
+            fieldMomentum: expect.any(Array),
+            skillMomentum: expect.any(Array),
+          }),
         }),
         sources: expect.any(Array),
       }),

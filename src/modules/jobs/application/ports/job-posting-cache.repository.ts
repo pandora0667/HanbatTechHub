@@ -1,6 +1,7 @@
 import { SnapshotMetadata } from '../../../../common/types/snapshot.types';
 import { CompanyType, JobPosting } from '../../interfaces/job-posting.interface';
 import { JobPostingChangeResult } from '../../domain/models/job-posting-change.model';
+import { JobMarketHistoryEntry } from '../../domain/models/job-market-history.model';
 
 export const JOB_POSTING_CACHE_REPOSITORY = 'JOB_POSTING_CACHE_REPOSITORY';
 
@@ -23,6 +24,8 @@ export interface JobPostingCacheRepository {
   setAllJobs(entry: JobPostingCacheEntry): Promise<void>;
   getJobChangeSignals(): Promise<JobPostingChangeResult | null>;
   setJobChangeSignals(result: JobPostingChangeResult): Promise<void>;
+  getJobMarketHistory(limit?: number): Promise<JobMarketHistoryEntry[]>;
+  appendJobMarketHistory(entry: JobMarketHistoryEntry): Promise<void>;
   getLastUpdate(): Promise<string | null>;
   setLastUpdate(timestamp: string): Promise<void>;
 }

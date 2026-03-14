@@ -67,4 +67,30 @@ export class GetMarketOverviewQueryDto {
   @Min(1)
   @Max(30)
   deadlineWindowDays?: number = 7;
+
+  @ApiPropertyOptional({
+    description: '시장 추세 계산에 사용할 최근 히스토리 포인트 수',
+    default: 10,
+    minimum: 1,
+    maximum: 30,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  historyPoints?: number = 10;
+
+  @ApiPropertyOptional({
+    description: '회사/필드/기술 momentum 섹션 상위 개수',
+    default: 5,
+    minimum: 1,
+    maximum: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  trendLimit?: number = 5;
 }

@@ -32,6 +32,9 @@ class MarketOverviewSummaryDto {
 
   @ApiProperty()
   missingSources: number;
+
+  @ApiProperty()
+  historyPoints: number;
 }
 
 class MarketCompanyLeaderboardItemDto {
@@ -93,6 +96,74 @@ class MarketStaleSourceItemDto {
   collectedAt?: string;
 }
 
+class MarketTrendTimelinePointDto {
+  @ApiProperty()
+  collectedAt: string;
+
+  @ApiProperty()
+  totalOpenOpportunities: number;
+
+  @ApiProperty()
+  companiesHiring: number;
+}
+
+class MarketTrendSummaryDto {
+  @ApiProperty()
+  historyPoints: number;
+
+  @ApiProperty({ required: false })
+  baselineCollectedAt?: string;
+
+  @ApiProperty({ required: false })
+  latestCollectedAt?: string;
+
+  @ApiProperty()
+  totalOpenOpportunitiesDelta: number;
+
+  @ApiProperty()
+  companiesHiringDelta: number;
+
+  @ApiProperty()
+  fieldsTrackedDelta: number;
+
+  @ApiProperty()
+  skillsTrackedDelta: number;
+}
+
+class MarketMomentumItemDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  currentCount: number;
+
+  @ApiProperty()
+  baselineCount: number;
+
+  @ApiProperty()
+  delta: number;
+
+  @ApiProperty({ enum: ['up', 'down', 'flat'] })
+  direction: 'up' | 'down' | 'flat';
+}
+
+class MarketTrendSectionDto {
+  @ApiProperty({ type: MarketTrendSummaryDto })
+  summary: MarketTrendSummaryDto;
+
+  @ApiProperty({ type: [MarketTrendTimelinePointDto] })
+  timeline: MarketTrendTimelinePointDto[];
+
+  @ApiProperty({ type: [MarketMomentumItemDto] })
+  companyMomentum: MarketMomentumItemDto[];
+
+  @ApiProperty({ type: [MarketMomentumItemDto] })
+  fieldMomentum: MarketMomentumItemDto[];
+
+  @ApiProperty({ type: [MarketMomentumItemDto] })
+  skillMomentum: MarketMomentumItemDto[];
+}
+
 class MarketOverviewSectionsDto {
   @ApiProperty({ type: [MarketCompanyLeaderboardItemDto] })
   topCompanies: MarketCompanyLeaderboardItemDto[];
@@ -105,6 +176,9 @@ class MarketOverviewSectionsDto {
 
   @ApiProperty({ type: [MarketStaleSourceItemDto] })
   staleSources: MarketStaleSourceItemDto[];
+
+  @ApiProperty({ type: MarketTrendSectionDto })
+  trends: MarketTrendSectionDto;
 }
 
 export class MarketOverviewResponseDto {

@@ -6,6 +6,7 @@ import { CRAWLER_PROVIDERS } from './crawlers';
 import { HttpClientUtil } from './utils/http-client.util';
 import { JobPostingSearchService } from './domain/services/job-posting-search.service';
 import { JobPostingChangeDetectorService } from './domain/services/job-posting-change-detector.service';
+import { JobMarketHistoryBuilderService } from './domain/services/job-market-history-builder.service';
 import { JobCrawlerExecutionService } from './application/services/job-crawler-execution.service';
 import { JobPostingCollectorService } from './application/services/job-posting-collector.service';
 import { JobPostingSnapshotReaderService } from './application/services/job-posting-snapshot-reader.service';
@@ -28,6 +29,7 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     HttpClientUtil,
     JobPostingSearchService,
     JobPostingChangeDetectorService,
+    JobMarketHistoryBuilderService,
     JobCrawlerExecutionService,
     JobPostingCollectorService,
     JobPostingSnapshotReaderService,
@@ -53,6 +55,7 @@ import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-ca
     JobsService,
     JobPostingSearchService,
     JobPostingSnapshotReaderService,
+    JobMarketHistoryBuilderService,
     JOB_POSTING_CACHE_REPOSITORY,
   ],
 })

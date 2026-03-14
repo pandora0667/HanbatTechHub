@@ -13,6 +13,7 @@ import { JobPostingCollectorService } from '../services/job-posting-collector.se
 import { SyncJobCacheUseCase } from './sync-job-cache.use-case';
 import { JobPostingChangeDetectorService } from '../../domain/services/job-posting-change-detector.service';
 import { CompanyType, JobPosting } from '../../interfaces/job-posting.interface';
+import { JobMarketHistoryBuilderService } from '../../domain/services/job-market-history-builder.service';
 
 describe('SyncJobCacheUseCase', () => {
   let useCase: SyncJobCacheUseCase;
@@ -57,6 +58,8 @@ describe('SyncJobCacheUseCase', () => {
     setAllJobs: jest.fn(),
     getJobChangeSignals: jest.fn(),
     setJobChangeSignals: jest.fn(),
+    getJobMarketHistory: jest.fn(),
+    appendJobMarketHistory: jest.fn(),
     getLastUpdate: jest.fn(),
     setLastUpdate: jest.fn(),
   };
@@ -70,6 +73,7 @@ describe('SyncJobCacheUseCase', () => {
       providers: [
         SyncJobCacheUseCase,
         JobPostingChangeDetectorService,
+        JobMarketHistoryBuilderService,
         {
           provide: JOB_POSTING_CACHE_REPOSITORY,
           useValue: jobPostingCacheRepository,
@@ -135,6 +139,14 @@ describe('SyncJobCacheUseCase', () => {
       }),
     );
     expect(jobPostingCacheRepository.clearDerivedSearchCaches).toHaveBeenCalled();
+    expect(jobPostingCacheRepository.appendJobMarketHistory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          totalOpenOpportunities: 3,
+          companiesHiring: 2,
+        }),
+      }),
+    );
     expect(jobPostingCacheRepository.setJobChangeSignals).toHaveBeenCalledWith(
       expect.objectContaining({
         summary: expect.objectContaining({

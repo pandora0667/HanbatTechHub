@@ -16,6 +16,7 @@ import {
   JOB_SOURCE_COMPANIES,
 } from '../../constants/job-source.constant';
 import { JobPostingChangeDetectorService } from '../../domain/services/job-posting-change-detector.service';
+import { JobMarketHistoryBuilderService } from '../../domain/services/job-market-history-builder.service';
 
 @Injectable()
 export class SyncJobCacheUseCase {
@@ -26,6 +27,7 @@ export class SyncJobCacheUseCase {
     private readonly jobPostingCacheRepository: JobPostingCacheRepository,
     private readonly jobPostingCollectorService: JobPostingCollectorService,
     private readonly jobPostingChangeDetectorService: JobPostingChangeDetectorService,
+    private readonly jobMarketHistoryBuilderService: JobMarketHistoryBuilderService,
   ) {}
 
   async execute(at: Date = new Date()): Promise<void> {
@@ -95,6 +97,9 @@ export class SyncJobCacheUseCase {
     };
 
     await this.jobPostingCacheRepository.setAllJobs(allEntry);
+    await this.jobPostingCacheRepository.appendJobMarketHistory(
+      this.jobMarketHistoryBuilderService.build(allEntry),
+    );
     await this.jobPostingCacheRepository.clearDerivedSearchCaches();
     await this.jobPostingCacheRepository.setJobChangeSignals(
       this.jobPostingChangeDetectorService.detect({
