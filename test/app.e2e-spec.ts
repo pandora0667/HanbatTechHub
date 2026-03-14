@@ -306,6 +306,60 @@ describe('AppController (e2e)', () => {
     );
   });
 
+  it('/api/v1/institutions/SNU/opportunities (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/SNU/opportunities?serviceType=scholarship')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        institution: expect.objectContaining({
+          id: 'SNU',
+        }),
+        summary: expect.objectContaining({
+          totalOpportunities: expect.any(Number),
+          serviceTypesCovered: expect.any(Number),
+          liveInstitutions: expect.any(Number),
+          fallbackInstitutions: expect.any(Number),
+        }),
+        meta: expect.objectContaining({
+          limit: expect.any(Number),
+          serviceType: 'scholarship',
+          snapshot: expect.objectContaining({
+            sourceIds: ['institution.snu.discovery'],
+          }),
+        }),
+        items: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
+  });
+
+  it('/api/v1/institutions/opportunities/board (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/opportunities/board?institutions=HANBAT,SNU')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        summary: expect.objectContaining({
+          totalOpportunities: expect.any(Number),
+          serviceTypesCovered: expect.any(Number),
+          liveInstitutions: expect.any(Number),
+          fallbackInstitutions: expect.any(Number),
+        }),
+        meta: expect.objectContaining({
+          totalCount: expect.any(Number),
+          snapshot: expect.any(Object),
+        }),
+        items: expect.any(Array),
+        sources: expect.any(Array),
+      }),
+    );
+  });
+
   it('/api/v1/institutions/HANBAT/overview (GET)', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/institutions/HANBAT/overview')

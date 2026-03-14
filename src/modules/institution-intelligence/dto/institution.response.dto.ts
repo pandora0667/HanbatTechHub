@@ -369,3 +369,121 @@ export class InstitutionDiscoveryResponseDto {
   @ApiProperty({ type: [InstitutionDiscoverySectionDto] })
   sections: InstitutionDiscoverySectionDto[];
 }
+
+class InstitutionOpportunityItemDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  institutionId: string;
+
+  @ApiProperty()
+  institutionName: string;
+
+  @ApiProperty()
+  region: string;
+
+  @ApiProperty({
+    enum: [
+      'scholarship',
+      'career_program',
+      'job_fair',
+      'field_practice',
+      'internship',
+      'extracurricular',
+      'mentoring',
+      'startup',
+      'global_program',
+    ],
+  })
+  serviceType: InstitutionServiceType;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty()
+  pageUrl: string;
+
+  @ApiProperty({ type: [String] })
+  matchedKeywords: string[];
+
+  @ApiProperty()
+  score: number;
+
+  @ApiProperty({
+    enum: ['live', 'catalog_fallback'],
+  })
+  discoveryMode: 'live' | 'catalog_fallback';
+
+  @ApiProperty()
+  sourceId: string;
+}
+
+class InstitutionOpportunitySummaryDto {
+  @ApiProperty()
+  totalOpportunities: number;
+
+  @ApiProperty()
+  serviceTypesCovered: number;
+
+  @ApiProperty()
+  liveInstitutions: number;
+
+  @ApiProperty()
+  fallbackInstitutions: number;
+}
+
+class InstitutionOpportunitiesMetaDto {
+  @ApiProperty()
+  totalCount: number;
+
+  @ApiProperty()
+  currentPage: number;
+
+  @ApiProperty()
+  totalPages: number;
+
+  @ApiProperty()
+  hasNextPage: boolean;
+
+  @ApiProperty()
+  hasPreviousPage: boolean;
+
+  @ApiProperty()
+  limit: number;
+
+  @ApiProperty({ required: false })
+  serviceType?: InstitutionServiceType;
+
+  @ApiProperty({ required: false })
+  keyword?: string;
+
+  @ApiProperty({ type: SnapshotDto, required: false })
+  snapshot?: SnapshotDto;
+}
+
+export class InstitutionOpportunitiesResponseDto {
+  @ApiProperty()
+  generatedAt: string;
+
+  @ApiProperty({ type: InstitutionRegistryItemDto, required: false })
+  institution?: InstitutionRegistryItemDto;
+
+  @ApiProperty({ type: SnapshotDto, required: false })
+  snapshot?: SnapshotDto;
+
+  @ApiProperty({ type: InstitutionOpportunitySummaryDto })
+  summary: InstitutionOpportunitySummaryDto;
+
+  @ApiProperty({ type: InstitutionOpportunitiesMetaDto })
+  meta: InstitutionOpportunitiesMetaDto;
+
+  @ApiProperty({ type: [InstitutionOpportunityItemDto] })
+  items: InstitutionOpportunityItemDto[];
+
+  @ApiProperty({ type: [SourceRegistryItemDto] })
+  sources: SourceRegistryItemDto[];
+}

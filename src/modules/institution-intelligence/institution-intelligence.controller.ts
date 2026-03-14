@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseEnumPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseEnumPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   INSTITUTION_ENUM,
@@ -7,9 +7,14 @@ import {
 import {
   InstitutionCatalogResponseDto,
   InstitutionDiscoveryResponseDto,
+  InstitutionOpportunitiesResponseDto,
   InstitutionOverviewResponseDto,
   InstitutionRegistryResponseDto,
 } from './dto/institution.response.dto';
+import {
+  GetInstitutionOpportunityBoardQueryDto,
+  GetInstitutionOpportunitiesQueryDto,
+} from './dto/get-institution-opportunities-query.dto';
 import { InstitutionIntelligenceService } from './institution-intelligence.service';
 
 @ApiTags('institutions')
@@ -30,6 +35,23 @@ export class InstitutionIntelligenceController {
   })
   getInstitutions(): InstitutionRegistryResponseDto {
     return this.institutionIntelligenceService.getInstitutions();
+  }
+
+  @Get('opportunities/board')
+  @ApiOperation({
+    summary: '전국 institution opportunity board 조회',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'institution opportunity board',
+    type: InstitutionOpportunitiesResponseDto,
+  })
+  getInstitutionOpportunityBoard(
+    @Query() query: GetInstitutionOpportunityBoardQueryDto,
+  ): Promise<InstitutionOpportunitiesResponseDto> {
+    return this.institutionIntelligenceService.getInstitutionOpportunityBoard(
+      query,
+    );
   }
 
   @Get(':institution/catalog')
@@ -71,6 +93,30 @@ export class InstitutionIntelligenceController {
   ): Promise<InstitutionDiscoveryResponseDto> {
     return this.institutionIntelligenceService.getInstitutionDiscovery(
       institution,
+    );
+  }
+
+  @Get(':institution/opportunities')
+  @ApiOperation({
+    summary: 'institution opportunity 목록 조회',
+  })
+  @ApiParam({
+    name: 'institution',
+    enum: Object.values(INSTITUTION_ENUM),
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'institution opportunity list',
+    type: InstitutionOpportunitiesResponseDto,
+  })
+  getInstitutionOpportunities(
+    @Param('institution', new ParseEnumPipe(INSTITUTION_ENUM))
+    institution: InstitutionType,
+    @Query() query: GetInstitutionOpportunitiesQueryDto,
+  ): Promise<InstitutionOpportunitiesResponseDto> {
+    return this.institutionIntelligenceService.getInstitutionOpportunities(
+      institution,
+      query,
     );
   }
 

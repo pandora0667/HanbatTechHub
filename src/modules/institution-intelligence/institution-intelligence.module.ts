@@ -8,10 +8,13 @@ import {
   INSTITUTION_DISCOVERY_REPOSITORY,
 } from './application/ports/institution-discovery.repository';
 import { GetInstitutionDiscoveryUseCase } from './application/use-cases/get-institution-discovery.use-case';
+import { GetInstitutionOpportunityBoardUseCase } from './application/use-cases/get-institution-opportunity-board.use-case';
+import { GetInstitutionOpportunitiesUseCase } from './application/use-cases/get-institution-opportunities.use-case';
 import { GetInstitutionOverviewUseCase } from './application/use-cases/get-institution-overview.use-case';
 import { GetInstitutionsUseCase } from './application/use-cases/get-institutions.use-case';
 import { UpdateInstitutionDiscoveryCacheUseCase } from './application/use-cases/update-institution-discovery-cache.use-case';
 import { InstitutionLinkDiscoveryService } from './domain/services/institution-link-discovery.service';
+import { InstitutionOpportunityBuilderService } from './domain/services/institution-opportunity-builder.service';
 import { InstitutionIntelligenceController } from './institution-intelligence.controller';
 import { InstitutionHomepageSourceGateway } from './infrastructure/gateways/institution-homepage-source.gateway';
 import { RedisInstitutionDiscoveryRepository } from './infrastructure/persistence/redis-institution-discovery.repository';
@@ -25,9 +28,12 @@ import { InstitutionIntelligenceService } from './institution-intelligence.servi
     GetInstitutionsUseCase,
     GetInstitutionCatalogUseCase,
     GetInstitutionDiscoveryUseCase,
+    GetInstitutionOpportunitiesUseCase,
+    GetInstitutionOpportunityBoardUseCase,
     GetInstitutionOverviewUseCase,
     UpdateInstitutionDiscoveryCacheUseCase,
     InstitutionLinkDiscoveryService,
+    InstitutionOpportunityBuilderService,
     InstitutionHomepageSourceGateway,
     RedisInstitutionDiscoveryRepository,
     {

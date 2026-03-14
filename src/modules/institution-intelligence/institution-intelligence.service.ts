@@ -6,14 +6,21 @@ import { InstitutionType } from './constants/institution-registry.constant';
 import {
   InstitutionCatalogResponseDto,
   InstitutionDiscoveryResponseDto,
+  InstitutionOpportunitiesResponseDto,
   InstitutionOverviewResponseDto,
   InstitutionRegistryResponseDto,
 } from './dto/institution.response.dto';
 import { GetInstitutionCatalogUseCase } from './application/use-cases/get-institution-catalog.use-case';
 import { GetInstitutionDiscoveryUseCase } from './application/use-cases/get-institution-discovery.use-case';
+import { GetInstitutionOpportunityBoardUseCase } from './application/use-cases/get-institution-opportunity-board.use-case';
+import { GetInstitutionOpportunitiesUseCase } from './application/use-cases/get-institution-opportunities.use-case';
 import { GetInstitutionOverviewUseCase } from './application/use-cases/get-institution-overview.use-case';
 import { GetInstitutionsUseCase } from './application/use-cases/get-institutions.use-case';
 import { INSTITUTION_DISCOVERY_UPDATE_CRON } from './constants/institution-discovery.constant';
+import {
+  GetInstitutionOpportunityBoardQueryDto,
+  GetInstitutionOpportunitiesQueryDto,
+} from './dto/get-institution-opportunities-query.dto';
 
 @Injectable()
 export class InstitutionIntelligenceService implements OnModuleInit {
@@ -24,6 +31,8 @@ export class InstitutionIntelligenceService implements OnModuleInit {
     private readonly getInstitutionsUseCase: GetInstitutionsUseCase,
     private readonly getInstitutionCatalogUseCase: GetInstitutionCatalogUseCase,
     private readonly getInstitutionDiscoveryUseCase: GetInstitutionDiscoveryUseCase,
+    private readonly getInstitutionOpportunitiesUseCase: GetInstitutionOpportunitiesUseCase,
+    private readonly getInstitutionOpportunityBoardUseCase: GetInstitutionOpportunityBoardUseCase,
     private readonly updateInstitutionDiscoveryCacheUseCase: UpdateInstitutionDiscoveryCacheUseCase,
     private readonly getInstitutionOverviewUseCase: GetInstitutionOverviewUseCase,
   ) {}
@@ -53,6 +62,19 @@ export class InstitutionIntelligenceService implements OnModuleInit {
     institution: InstitutionType,
   ): Promise<InstitutionDiscoveryResponseDto> {
     return this.getInstitutionDiscoveryUseCase.execute(institution);
+  }
+
+  async getInstitutionOpportunities(
+    institution: InstitutionType,
+    query: GetInstitutionOpportunitiesQueryDto,
+  ): Promise<InstitutionOpportunitiesResponseDto> {
+    return this.getInstitutionOpportunitiesUseCase.execute(institution, query);
+  }
+
+  async getInstitutionOpportunityBoard(
+    query: GetInstitutionOpportunityBoardQueryDto,
+  ): Promise<InstitutionOpportunitiesResponseDto> {
+    return this.getInstitutionOpportunityBoardUseCase.execute(query);
   }
 
   async getInstitutionOverview(

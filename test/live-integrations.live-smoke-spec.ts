@@ -105,12 +105,15 @@ import { InstitutionIntelligenceService } from '../src/modules/institution-intel
 import { GetInstitutionsUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institutions.use-case';
 import { GetInstitutionCatalogUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-catalog.use-case';
 import { GetInstitutionDiscoveryUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-discovery.use-case';
+import { GetInstitutionOpportunityBoardUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-opportunity-board.use-case';
+import { GetInstitutionOpportunitiesUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-opportunities.use-case';
 import { GetInstitutionOverviewUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-overview.use-case';
 import {
   INSTITUTION_DISCOVERY_REPOSITORY,
 } from '../src/modules/institution-intelligence/application/ports/institution-discovery.repository';
 import { InstitutionHomepageSourceGateway } from '../src/modules/institution-intelligence/infrastructure/gateways/institution-homepage-source.gateway';
 import { InstitutionLinkDiscoveryService } from '../src/modules/institution-intelligence/domain/services/institution-link-discovery.service';
+import { InstitutionOpportunityBuilderService } from '../src/modules/institution-intelligence/domain/services/institution-opportunity-builder.service';
 import { RedisInstitutionDiscoveryRepository } from '../src/modules/institution-intelligence/infrastructure/persistence/redis-institution-discovery.repository';
 import { UpdateInstitutionDiscoveryCacheUseCase } from '../src/modules/institution-intelligence/application/use-cases/update-institution-discovery-cache.use-case';
 import { ContentIntelligenceService } from '../src/modules/content-intelligence/content-intelligence.service';
@@ -310,9 +313,12 @@ describeLive('Live Integration Smoke', () => {
         GetInstitutionsUseCase,
         GetInstitutionCatalogUseCase,
         GetInstitutionDiscoveryUseCase,
+        GetInstitutionOpportunitiesUseCase,
+        GetInstitutionOpportunityBoardUseCase,
         GetInstitutionOverviewUseCase,
         UpdateInstitutionDiscoveryCacheUseCase,
         InstitutionLinkDiscoveryService,
+        InstitutionOpportunityBuilderService,
         InstitutionHomepageSourceGateway,
         RedisInstitutionDiscoveryRepository,
         {
@@ -517,6 +523,56 @@ describeLive('Live Integration Smoke', () => {
       expect(response.summary.pagesVisited).toBeGreaterThan(0);
       expect(response.summary.totalDiscoveredLinks).toBeGreaterThan(0);
     }
+  });
+
+  it('builds live institution opportunities for wave-1 schools', async () => {
+    const waveOneInstitutions = [
+      'HANBAT',
+      'KANGWON',
+      'SEOULTECH',
+      'KMOU',
+      'GINUE',
+      'SNU',
+      'INU',
+      'KNOU',
+    ] as const;
+
+    for (const institution of waveOneInstitutions) {
+      const response =
+        await institutionIntelligenceService.getInstitutionOpportunities(
+          institution,
+          {
+            page: 1,
+            limit: 10,
+          },
+        );
+
+      expect(response.institution?.id).toBe(institution);
+      expect(response.summary.totalOpportunities).toBeGreaterThan(0);
+      expect(response.summary.serviceTypesCovered).toBeGreaterThan(0);
+      expect(response.items.length).toBeGreaterThan(0);
+      expect(response.sources).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: `institution.${institution.toLowerCase()}.discovery`,
+          }),
+        ]),
+      );
+    }
+  });
+
+  it('builds a nationwide institution opportunity board from cached discovery snapshots', async () => {
+    const response =
+      await institutionIntelligenceService.getInstitutionOpportunityBoard({
+        page: 1,
+        limit: 50,
+      });
+
+    expect(response.summary.totalOpportunities).toBeGreaterThan(0);
+    expect(response.summary.serviceTypesCovered).toBeGreaterThan(0);
+    expect(response.summary.liveInstitutions).toBeGreaterThan(0);
+    expect(response.items.length).toBeGreaterThan(0);
+    expect(response.sources.length).toBeGreaterThan(0);
   });
 
   it('builds institution overview for every registered national university', async () => {
