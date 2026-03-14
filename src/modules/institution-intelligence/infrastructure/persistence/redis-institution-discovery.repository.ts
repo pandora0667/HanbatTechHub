@@ -50,13 +50,15 @@ export class RedisInstitutionDiscoveryRepository
     const existingSnapshot =
       await this.redisService.get<InstitutionDiscoverySnapshot>(snapshotKey);
 
-    if (
-      existingSnapshot &&
-      JSON.stringify(existingSnapshot) !== JSON.stringify(snapshot)
-    ) {
+    if (existingSnapshot) {
+      const previousBaseline =
+        JSON.stringify(existingSnapshot) === JSON.stringify(snapshot)
+          ? snapshot
+          : existingSnapshot;
+
       await this.redisService.set(
         previousSnapshotKey,
-        existingSnapshot,
+        previousBaseline,
         INSTITUTION_DISCOVERY_HISTORY_TTL,
       );
     }
