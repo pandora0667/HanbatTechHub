@@ -196,12 +196,14 @@ describeLive('Live Integration Smoke', () => {
   let institutionIntelligenceService: InstitutionIntelligenceService;
   let contentIntelligenceService: ContentIntelligenceService;
   let getSourceHealthUseCase: GetSourceHealthUseCase;
+  let updateInstitutionDiscoveryCacheUseCase: UpdateInstitutionDiscoveryCacheUseCase;
   let institutionDiscoveryRepository: {
     getSnapshot: (institution: string) => Promise<any>;
     saveSnapshot: (institution: string, snapshot: unknown) => Promise<void>;
   };
   let redisService: InMemoryRedisService;
   let jobPostingCacheRepository: RedisJobPostingCacheRepository;
+  let institutionDiscoveryWarmed = false;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
@@ -361,6 +363,9 @@ describeLive('Live Integration Smoke', () => {
     );
     contentIntelligenceService = moduleRef.get(ContentIntelligenceService);
     getSourceHealthUseCase = moduleRef.get(GetSourceHealthUseCase);
+    updateInstitutionDiscoveryCacheUseCase = moduleRef.get(
+      UpdateInstitutionDiscoveryCacheUseCase,
+    );
     jobPostingCacheRepository = moduleRef.get(RedisJobPostingCacheRepository);
     institutionDiscoveryRepository = moduleRef.get(INSTITUTION_DISCOVERY_REPOSITORY);
     redisService = moduleRef.get(RedisService);
@@ -369,6 +374,7 @@ describeLive('Live Integration Smoke', () => {
   beforeEach(async () => {
     await redisService.flushAll();
     translationServiceStub.translate.mockClear();
+    institutionDiscoveryWarmed = false;
   });
 
   afterAll(async () => {
@@ -379,6 +385,15 @@ describeLive('Live Integration Smoke', () => {
     httpGlobalAgent.destroy();
     httpsGlobalAgent.destroy();
   });
+
+  async function ensureInstitutionDiscoveryWarm(): Promise<void> {
+    if (institutionDiscoveryWarmed) {
+      return;
+    }
+
+    await updateInstitutionDiscoveryCacheUseCase.execute();
+    institutionDiscoveryWarmed = true;
+  }
 
   it('fetches a live weekly menu snapshot from Hanbat', async () => {
     const weeklyMenu = await menuService.getWeeklyMenu();
@@ -470,6 +485,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds a live institution overview from cached institution snapshots', async () => {
+    await ensureInstitutionDiscoveryWarm();
     await menuService.getWeeklyMenu();
     await noticeService.getNotices(1, 5);
 
@@ -506,6 +522,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('discovers live public institution surfaces for wave-1 schools', async () => {
+    await ensureInstitutionDiscoveryWarm();
     const waveOneInstitutions = [
       'HANBAT',
       'KANGWON',
@@ -535,6 +552,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds live institution opportunities for wave-1 schools', async () => {
+    await ensureInstitutionDiscoveryWarm();
     const waveOneInstitutions = [
       'HANBAT',
       'KANGWON',
@@ -571,6 +589,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds a nationwide institution opportunity board from cached discovery snapshots', async () => {
+    await ensureInstitutionDiscoveryWarm();
     const response =
       await institutionIntelligenceService.getInstitutionOpportunityBoard({
         page: 1,
@@ -585,6 +604,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds institution overview for every registered national university', async () => {
+    await ensureInstitutionDiscoveryWarm();
     const registry = institutionIntelligenceService.getInstitutions();
 
     for (const institution of registry.institutions) {
@@ -680,6 +700,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds institution opportunity change signals from cached discovery history', async () => {
+    await ensureInstitutionDiscoveryWarm();
     await institutionIntelligenceService.getInstitutionDiscovery('SNU');
     const currentSnapshot =
       await institutionDiscoveryRepository.getSnapshot('SNU');
@@ -748,6 +769,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds a live today workspace view from cached snapshots', async () => {
+    await ensureInstitutionDiscoveryWarm();
     await menuService.getWeeklyMenu();
     await noticeService.getNotices(1, 5);
     await blogService.getAllPosts(1, 5);
@@ -772,6 +794,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds a live radar workspace view from cached snapshots', async () => {
+    await ensureInstitutionDiscoveryWarm();
     await menuService.getWeeklyMenu();
     await noticeService.getNotices(1, 5);
     await blogService.getAllPosts(1, 5);
@@ -887,6 +910,7 @@ describeLive('Live Integration Smoke', () => {
   });
 
   it('builds a live act workspace view from cached snapshots only', async () => {
+    await ensureInstitutionDiscoveryWarm();
     const httpClient = new HttpClientUtil();
     const configService = {
       get: jest.fn(),

@@ -32,6 +32,7 @@ import { mapInstitutionRegistryItem } from '../../utils/institution-registry-res
 
 interface ExecuteOptions {
   forceRefresh?: boolean;
+  allowRefresh?: boolean;
 }
 
 @Injectable()
@@ -58,12 +59,16 @@ export class GetInstitutionDiscoveryUseCase {
     const cachedSnapshot = await this.institutionDiscoveryRepository.getSnapshot(
       institution,
     );
+    const allowRefresh = options?.allowRefresh === true;
     const shouldRefresh =
       options?.forceRefresh === true ||
-      !cachedSnapshot ||
-      this.isStale(cachedSnapshot);
+      (allowRefresh && (!cachedSnapshot || this.isStale(cachedSnapshot)));
 
     let snapshot = cachedSnapshot;
+
+    if (!snapshot && !shouldRefresh) {
+      snapshot = await this.createAndPersistFallbackSnapshot(registryEntry);
+    }
 
     if (shouldRefresh) {
       try {
@@ -75,11 +80,7 @@ export class GetInstitutionDiscoveryUseCase {
           );
           snapshot = cachedSnapshot;
         } else {
-          const message =
-            error instanceof Error ? error.message : String(error ?? 'unknown');
-          throw new ServiceUnavailableException(
-            `Institution discovery is temporarily unavailable for ${institution}: ${message}`,
-          );
+          snapshot = await this.createAndPersistFallbackSnapshot(registryEntry);
         }
       }
     }
@@ -181,6 +182,29 @@ export class GetInstitutionDiscoveryUseCase {
     await this.institutionDiscoveryRepository.saveSnapshot(institution, snapshot);
 
     return snapshot;
+  }
+
+  private async createAndPersistFallbackSnapshot(
+    registryEntry: ReturnType<typeof getInstitutionRegistryEntry>,
+  ): Promise<InstitutionDiscoverySnapshot> {
+    if (!registryEntry) {
+      throw new ServiceUnavailableException(
+        'Institution discovery fallback could not be created.',
+      );
+    }
+
+    const fallbackSnapshot =
+      this.institutionLinkDiscoveryService.buildCatalogFallbackSnapshot(
+        registryEntry,
+        new Date().toISOString(),
+      );
+
+    await this.institutionDiscoveryRepository.saveSnapshot(
+      registryEntry.id,
+      fallbackSnapshot,
+    );
+
+    return fallbackSnapshot;
   }
 
   private isStale(snapshot: InstitutionDiscoverySnapshot): boolean {

@@ -1,6 +1,21 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import { Redis, RedisOptions } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
+
+export function buildRedisOptions(
+  configService: ConfigService,
+): RedisOptions {
+  return {
+    host: configService.get<string>('REDIS_HOST'),
+    port: configService.get<number>('REDIS_PORT'),
+    password: configService.get<string>('REDIS_PASSWORD'),
+    db: configService.get<number>('REDIS_DB'),
+    connectTimeout: 10_000,
+    keepAlive: 10_000,
+    maxRetriesPerRequest: null,
+    retryStrategy: (times) => Math.min(times * 500, 5_000),
+  };
+}
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
@@ -8,12 +23,8 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private readonly configService: ConfigService) {
-    this.redis = new Redis({
-      host: this.configService.get<string>('REDIS_HOST'),
-      port: this.configService.get<number>('REDIS_PORT'),
-      password: this.configService.get<string>('REDIS_PASSWORD'),
-      db: this.configService.get<number>('REDIS_DB'),
-    });
+    this.redis = new Redis(buildRedisOptions(this.configService));
+    this.registerEventHandlers();
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -85,5 +96,23 @@ export class RedisService implements OnModuleDestroy {
       );
       this.redis.disconnect();
     }
+  }
+
+  private registerEventHandlers(): void {
+    this.redis.on('connect', () => {
+      this.logger.log('Redis TCP connection established.');
+    });
+
+    this.redis.on('ready', () => {
+      this.logger.log('Redis client is ready.');
+    });
+
+    this.redis.on('reconnecting', (delay: number) => {
+      this.logger.warn(`Redis reconnecting in ${delay}ms.`);
+    });
+
+    this.redis.on('error', (error) => {
+      this.logger.warn(`Redis connection error: ${error.message}`);
+    });
   }
 }

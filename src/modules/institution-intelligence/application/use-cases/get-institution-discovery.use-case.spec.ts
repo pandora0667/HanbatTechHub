@@ -9,6 +9,7 @@ import { GetInstitutionDiscoveryUseCase } from './get-institution-discovery.use-
 describe('GetInstitutionDiscoveryUseCase', () => {
   const repository = {
     getSnapshot: jest.fn(),
+    getPreviousSnapshot: jest.fn(),
     saveSnapshot: jest.fn(),
   };
 
@@ -39,7 +40,19 @@ describe('GetInstitutionDiscoveryUseCase', () => {
     useCase = moduleRef.get(GetInstitutionDiscoveryUseCase);
   });
 
-  it('builds and caches discovery snapshot on cache miss', async () => {
+  it('returns and caches catalog fallback on cache miss by default', async () => {
+    repository.getSnapshot.mockResolvedValue(null);
+
+    const result = await useCase.execute('SNU');
+
+    expect(result.institution.id).toBe('SNU');
+    expect(result.summary.coveredServiceTypes).toBeGreaterThan(0);
+    expect(result.summary.mode).toBe('catalog_fallback');
+    expect(gateway.fetchPages).not.toHaveBeenCalled();
+    expect(repository.saveSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('can force a live refresh on cache miss', async () => {
     repository.getSnapshot.mockResolvedValue(null);
     gateway.fetchPages.mockResolvedValue([
       {
@@ -54,10 +67,9 @@ describe('GetInstitutionDiscoveryUseCase', () => {
       },
     ]);
 
-    const result = await useCase.execute('SNU');
+    const result = await useCase.execute('SNU', { forceRefresh: true });
 
-    expect(result.institution.id).toBe('SNU');
-    expect(result.summary.coveredServiceTypes).toBeGreaterThan(0);
+    expect(result.summary.mode).toBe('live');
     expect(result.sections).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -70,6 +82,7 @@ describe('GetInstitutionDiscoveryUseCase', () => {
         }),
       ]),
     );
+    expect(gateway.fetchPages).toHaveBeenCalledTimes(1);
     expect(repository.saveSnapshot).toHaveBeenCalledTimes(1);
   });
 
