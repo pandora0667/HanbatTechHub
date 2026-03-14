@@ -84,6 +84,14 @@ export class GetInstitutionOpportunityBoardUseCase {
     const allItems = filteredByMode
       .flatMap((response) => response.items)
       .sort((left, right) => {
+        if (right.rank !== left.rank) {
+          return right.rank - left.rank;
+        }
+
+        if (left.postedAt && right.postedAt && left.postedAt !== right.postedAt) {
+          return right.postedAt.localeCompare(left.postedAt);
+        }
+
         if (right.score !== left.score) {
           return right.score - left.score;
         }

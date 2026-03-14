@@ -58,6 +58,8 @@ describe('GetInstitutionOverviewUseCase', () => {
                 pageUrl: 'https://example.com',
                 matchedKeywords: ['장학'],
                 score: 1,
+                recordType: 'program' as const,
+                excerpt: '장학 안내',
               },
             ],
           },

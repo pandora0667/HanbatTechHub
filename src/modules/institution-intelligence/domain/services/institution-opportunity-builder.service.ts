@@ -76,6 +76,8 @@ export class InstitutionOpportunityBuilderService {
           continue;
         }
 
+        const rank = this.computeRank(link.score, link.recordType, link.postedAt, mode);
+
         items.set(dedupeKey, {
           id: `${registryEntry.id}:${section.serviceType}:${Buffer.from(normalizedUrl).toString('base64url')}`,
           institutionId: registryEntry.id,
@@ -87,7 +89,11 @@ export class InstitutionOpportunityBuilderService {
           pageUrl: this.normalizeUrl(link.pageUrl),
           matchedKeywords: [...link.matchedKeywords],
           score: link.score,
+          rank,
           discoveryMode: mode,
+          recordType: link.recordType,
+          excerpt: link.excerpt,
+          postedAt: link.postedAt,
           sourceId: snapshot.sourceIds[0],
         });
       }
@@ -95,6 +101,14 @@ export class InstitutionOpportunityBuilderService {
 
     return {
       items: Array.from(items.values()).sort((left, right) => {
+        if (right.rank !== left.rank) {
+          return right.rank - left.rank;
+        }
+
+        if (left.postedAt && right.postedAt && left.postedAt !== right.postedAt) {
+          return right.postedAt.localeCompare(left.postedAt);
+        }
+
         if (right.score !== left.score) {
           return right.score - left.score;
         }
@@ -108,5 +122,39 @@ export class InstitutionOpportunityBuilderService {
 
   private normalizeUrl(url: string): string {
     return url.trim();
+  }
+
+  private computeRank(
+    score: number,
+    recordType: InstitutionOpportunityItem['recordType'],
+    postedAt: string | undefined,
+    mode: InstitutionOpportunityDiscoveryMode,
+  ): number {
+    let rank = score * 10;
+
+    if (recordType === 'post') {
+      rank += 40;
+    } else if (recordType === 'program') {
+      rank += 30;
+    } else if (recordType === 'listing') {
+      rank += 10;
+    }
+
+    if (postedAt) {
+      const daysOld = Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(`${postedAt}T00:00:00.000Z`).getTime()) /
+            86_400_000,
+        ),
+      );
+      rank += Math.max(0, 14 - Math.min(daysOld, 14));
+    }
+
+    if (mode === 'live') {
+      rank += 5;
+    }
+
+    return Number(rank.toFixed(2));
   }
 }

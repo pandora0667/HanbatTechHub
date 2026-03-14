@@ -120,6 +120,9 @@ export class GetInstitutionDiscoveryUseCase {
           pageUrl: link.pageUrl,
           matchedKeywords: [...link.matchedKeywords],
           score: link.score,
+          recordType: link.recordType,
+          excerpt: link.excerpt,
+          postedAt: link.postedAt,
         })),
       })),
     };

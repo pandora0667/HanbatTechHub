@@ -20,7 +20,11 @@ type ComparableField =
   | 'pageUrl'
   | 'matchedKeywords'
   | 'score'
+  | 'rank'
   | 'discoveryMode'
+  | 'recordType'
+  | 'excerpt'
+  | 'postedAt'
   | 'sourceId';
 
 @Injectable()
@@ -101,7 +105,11 @@ export class InstitutionOpportunityChangeDetectorService {
       pageUrl: item.pageUrl.trim(),
       matchedKeywords: [...item.matchedKeywords].sort().join('|'),
       score: Number(item.score.toFixed(3)).toString(),
+      rank: Number(item.rank.toFixed(2)).toString(),
       discoveryMode: item.discoveryMode,
+      recordType: item.recordType,
+      excerpt: item.excerpt?.trim() ?? '',
+      postedAt: item.postedAt ?? '',
       sourceId: item.sourceId,
     };
   }
@@ -123,6 +131,10 @@ export class InstitutionOpportunityChangeDetectorService {
       url: item.url,
       pageUrl: item.pageUrl,
       discoveryMode: item.discoveryMode,
+      recordType: item.recordType,
+      excerpt: item.excerpt,
+      postedAt: item.postedAt,
+      rank: item.rank,
       sourceId: item.sourceId,
       changedFields,
     };
@@ -163,6 +175,14 @@ export class InstitutionOpportunityChangeDetectorService {
 
     if (changeTypeWeight !== 0) {
       return changeTypeWeight;
+    }
+
+    if (left.rank !== right.rank) {
+      return right.rank - left.rank;
+    }
+
+    if (left.postedAt && right.postedAt && left.postedAt !== right.postedAt) {
+      return right.postedAt.localeCompare(left.postedAt);
     }
 
     const institutionOrder = left.institutionName.localeCompare(

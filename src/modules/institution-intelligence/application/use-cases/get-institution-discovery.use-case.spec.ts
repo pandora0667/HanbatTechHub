@@ -103,6 +103,7 @@ describe('GetInstitutionDiscoveryUseCase', () => {
               pageUrl: 'https://example.edu',
               matchedKeywords: ['장학'],
               score: 4,
+              recordType: 'program' as const,
             },
           ],
         },

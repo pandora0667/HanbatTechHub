@@ -93,6 +93,7 @@ export class GetInstitutionOpportunitiesUseCase {
       }
 
       return [item.title, item.institutionName, item.region, ...item.matchedKeywords]
+        .concat(item.excerpt ?? '')
         .join(' ')
         .toLowerCase()
         .includes(keyword);

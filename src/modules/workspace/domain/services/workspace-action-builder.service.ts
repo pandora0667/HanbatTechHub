@@ -118,16 +118,30 @@ export class WorkspaceActionBuilderService {
   fromInstitutionOpportunity(
     item: InstitutionOpportunitiesResponseDto['items'][number],
   ): WorkspaceActionItem {
+    const subtitleParts = [
+      item.institutionName,
+      this.labelInstitutionServiceType(item.serviceType),
+    ];
+
+    if (item.postedAt) {
+      subtitleParts.push(item.postedAt);
+    }
+
     return {
       id: `institution-opportunity:${item.id}`,
       type: 'check',
-      priority: this.mapInstitutionOpportunityPriority(item.serviceType),
+      priority: this.mapInstitutionOpportunityPriority(item),
       sourceKind: 'institution',
       title: item.title,
-      subtitle: `${item.institutionName} · ${this.labelInstitutionServiceType(item.serviceType)}`,
+      subtitle: subtitleParts.join(' · '),
       reason: `${item.institutionName}에서 확인할 ${this.labelInstitutionServiceType(item.serviceType)} 정보입니다.`,
       url: item.url,
-      labels: [item.institutionId, item.serviceType, item.discoveryMode],
+      labels: [
+        item.institutionId,
+        item.serviceType,
+        item.discoveryMode,
+        item.recordType,
+      ],
     };
   }
 
@@ -202,22 +216,38 @@ export class WorkspaceActionBuilderService {
   }
 
   private mapInstitutionOpportunityPriority(
-    serviceType: InstitutionOpportunitiesResponseDto['items'][number]['serviceType'],
+    item: InstitutionOpportunitiesResponseDto['items'][number],
   ): WorkspaceActionPriority {
-    switch (serviceType) {
-      case 'scholarship':
-      case 'career_program':
-      case 'job_fair':
-      case 'field_practice':
-      case 'internship':
-        return 'high';
-      case 'extracurricular':
-      case 'mentoring':
-      case 'startup':
-        return 'medium';
-      default:
-        return 'low';
+    const basePriority = (() => {
+      switch (item.serviceType) {
+        case 'scholarship':
+        case 'career_program':
+        case 'job_fair':
+        case 'field_practice':
+        case 'internship':
+          return 'high';
+        case 'extracurricular':
+        case 'mentoring':
+        case 'startup':
+          return 'medium';
+        default:
+          return 'low';
+      }
+    })();
+
+    if (basePriority === 'high') {
+      return 'high';
     }
+
+    if (item.recordType === 'post' && item.rank >= 60) {
+      return 'high';
+    }
+
+    if (item.recordType === 'program' || item.rank >= 40) {
+      return 'medium';
+    }
+
+    return basePriority;
   }
 
   private labelInstitutionServiceType(

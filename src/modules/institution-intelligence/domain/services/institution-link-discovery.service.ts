@@ -8,6 +8,7 @@ import {
 } from '../../constants/institution-service-type.enum';
 import {
   InstitutionDiscoveryLink,
+  InstitutionDiscoveryRecordType,
   InstitutionDiscoverySection,
   InstitutionDiscoverySnapshot,
 } from '../types/institution-discovery.type';
@@ -79,6 +80,8 @@ export class InstitutionLinkDiscoveryService {
           pageUrl: entry.seedUrl,
           matchedKeywords: [serviceType],
           score: 1,
+          recordType: 'landing_page' as const,
+          excerpt: entry.notes,
         })),
       };
     });
@@ -141,16 +144,30 @@ export class InstitutionLinkDiscoveryService {
           titleForMatch,
           hrefForMatch,
           matchedKeywords,
+          absoluteUrl,
+          page.url,
+          this.extractContextText($, element),
         );
 
         if (score <= 0) {
           return;
         }
 
+        const contextText = this.extractContextText($, element);
+        const postedAt = this.extractPostedAt(contextText);
+        const recordType = this.detectRecordType(
+          absoluteUrl,
+          page.url,
+          titleForMatch,
+          contextText.toLowerCase(),
+          postedAt,
+        );
+        const excerpt = this.buildExcerpt(contextText, title);
         const displayTitle =
           title && !GENERIC_TEXT.has(title.toLowerCase())
             ? title
-            : this.deriveTitleFromUrl(absoluteUrl);
+            : this.deriveTitleFromContext(excerpt) ??
+              this.deriveTitleFromUrl(absoluteUrl);
 
         const existing = discovered.get(absoluteUrl);
         if (!existing || existing.score < score) {
@@ -160,6 +177,9 @@ export class InstitutionLinkDiscoveryService {
             pageUrl: page.url,
             matchedKeywords,
             score,
+            recordType,
+            excerpt,
+            postedAt,
           });
         }
       });
@@ -179,6 +199,9 @@ export class InstitutionLinkDiscoveryService {
     title: string,
     href: string,
     matchedKeywords: string[],
+    absoluteUrl: string,
+    pageUrl: string,
+    contextText: string,
   ): number {
     let score = 0;
 
@@ -192,11 +215,153 @@ export class InstitutionLinkDiscoveryService {
       }
     }
 
+    const postedAt = this.extractPostedAt(contextText);
+    const recordType = this.detectRecordType(
+      absoluteUrl,
+      pageUrl,
+      title,
+      contextText.toLowerCase(),
+      postedAt,
+    );
+    score += this.recordTypeScore(recordType);
+
+    if (absoluteUrl !== pageUrl) {
+      score += 1;
+    }
+
+    if (postedAt) {
+      score += 1;
+    }
+
     return score;
   }
 
   private normalizeText(value: string): string {
     return value.replace(/\s+/g, ' ').trim();
+  }
+
+  private extractContextText(
+    $: ReturnType<typeof cheerio.load>,
+    element: cheerio.Element,
+  ): string {
+    const container = $(element).closest('tr, li, article, section, div');
+    const rawText = this.normalizeText(container.text() || $(element).text());
+
+    if (!rawText) {
+      return '';
+    }
+
+    return rawText.slice(0, 280);
+  }
+
+  private buildExcerpt(contextText: string, title: string): string | undefined {
+    const normalizedContext = this.normalizeText(contextText);
+    if (!normalizedContext) {
+      return undefined;
+    }
+
+    const stripped = this.normalizeText(
+      normalizedContext.replace(title, '').replace(/\b(더보기|바로가기|more)\b/gi, ''),
+    );
+
+    if (!stripped || stripped === title) {
+      return undefined;
+    }
+
+    return stripped.slice(0, 180);
+  }
+
+  private deriveTitleFromContext(excerpt?: string): string | undefined {
+    if (!excerpt) {
+      return undefined;
+    }
+
+    const sentence = excerpt
+      .split(/(?<=[.!?])\s+/)
+      .map((segment) => segment.trim())
+      .find((segment) => segment.length >= 6);
+
+    if (!sentence) {
+      return undefined;
+    }
+
+    return sentence.slice(0, 80);
+  }
+
+  private extractPostedAt(contextText: string): string | undefined {
+    const normalized = this.normalizeText(contextText);
+    if (!normalized) {
+      return undefined;
+    }
+
+    const match = normalized.match(
+      /\b(20\d{2})[.\-/년\s]+(\d{1,2})[.\-/월\s]+(\d{1,2})(?:일)?\b/,
+    );
+
+    if (!match) {
+      return undefined;
+    }
+
+    const year = match[1];
+    const month = match[2].padStart(2, '0');
+    const day = match[3].padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private detectRecordType(
+    absoluteUrl: string,
+    pageUrl: string,
+    title: string,
+    contextText: string,
+    postedAt?: string,
+  ): InstitutionDiscoveryRecordType {
+    const lowerUrl = absoluteUrl.toLowerCase();
+
+    if (
+      lowerUrl.includes('artclview') ||
+      lowerUrl.includes('view.do') ||
+      lowerUrl.includes('/view') ||
+      lowerUrl.includes('board') ||
+      lowerUrl.includes('bbs') ||
+      postedAt
+    ) {
+      return 'post';
+    }
+
+    if (
+      /모집|신청|선발|프로그램|설명회|박람회|장학|취업|현장실습|인턴/.test(
+        `${title} ${contextText}`,
+      )
+    ) {
+      return 'program';
+    }
+
+    if (
+      absoluteUrl === pageUrl ||
+      lowerUrl.endsWith('/') ||
+      lowerUrl.includes('main.do') ||
+      lowerUrl.includes('index.do') ||
+      lowerUrl.includes('index.jsp')
+    ) {
+      return 'landing_page';
+    }
+
+    return 'listing';
+  }
+
+  private recordTypeScore(recordType: InstitutionDiscoveryRecordType): number {
+    switch (recordType) {
+      case 'post':
+        return 6;
+      case 'program':
+        return 4;
+      case 'listing':
+        return 2;
+      case 'landing_page':
+      default:
+        return 0;
+    }
   }
 
   private deriveTitleFromUrl(url: string): string {

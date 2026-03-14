@@ -10,6 +10,7 @@ import {
 import { InstitutionRolloutStatus } from '../constants/institution-rollout-status.constant';
 import { InstitutionServiceType } from '../constants/institution-service-type.enum';
 import { InstitutionSiteFamily } from '../constants/institution-site-family.constant';
+import { InstitutionDiscoveryRecordType } from '../domain/types/institution-discovery.type';
 import { SourceRegistryItemDto } from '../../source-registry/dto/source-registry-response.dto';
 
 class InstitutionRegistryItemDto {
@@ -198,6 +199,17 @@ class InstitutionDiscoveryLinkDto {
 
   @ApiProperty()
   score: number;
+
+  @ApiProperty({
+    enum: ['landing_page', 'listing', 'program', 'post'],
+  })
+  recordType: InstitutionDiscoveryRecordType;
+
+  @ApiProperty({ required: false })
+  excerpt?: string;
+
+  @ApiProperty({ required: false })
+  postedAt?: string;
 }
 
 class InstitutionDiscoverySectionDto {
@@ -413,10 +425,24 @@ class InstitutionOpportunityItemDto {
   @ApiProperty()
   score: number;
 
+  @ApiProperty()
+  rank: number;
+
   @ApiProperty({
     enum: ['live', 'catalog_fallback'],
   })
   discoveryMode: 'live' | 'catalog_fallback';
+
+  @ApiProperty({
+    enum: ['landing_page', 'listing', 'program', 'post'],
+  })
+  recordType: InstitutionDiscoveryRecordType;
+
+  @ApiProperty({ required: false })
+  excerpt?: string;
+
+  @ApiProperty({ required: false })
+  postedAt?: string;
 
   @ApiProperty()
   sourceId: string;

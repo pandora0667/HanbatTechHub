@@ -50,6 +50,18 @@ class InstitutionOpportunityChangeSignalDto {
   @ApiProperty({ enum: ['live', 'catalog_fallback'] })
   discoveryMode: string;
 
+  @ApiProperty({ enum: ['landing_page', 'listing', 'program', 'post'] })
+  recordType: string;
+
+  @ApiProperty({ required: false })
+  excerpt?: string;
+
+  @ApiProperty({ required: false })
+  postedAt?: string;
+
+  @ApiProperty()
+  rank: number;
+
   @ApiProperty()
   sourceId: string;
 

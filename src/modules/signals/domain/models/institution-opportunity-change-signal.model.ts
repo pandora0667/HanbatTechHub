@@ -2,6 +2,7 @@ import { SnapshotMetadata } from '../../../../common/types/snapshot.types';
 import { InstitutionType } from '../../../institution-intelligence/constants/institution-id.constant';
 import { InstitutionOpportunityDiscoveryMode } from '../../../institution-intelligence/constants/institution-opportunity.constant';
 import { InstitutionServiceType } from '../../../institution-intelligence/constants/institution-service-type.enum';
+import { InstitutionDiscoveryRecordType } from '../../../institution-intelligence/domain/types/institution-discovery.type';
 
 export type InstitutionOpportunityChangeType = 'new' | 'updated' | 'removed';
 
@@ -17,6 +18,10 @@ export interface InstitutionOpportunityChangeSignal {
   url: string;
   pageUrl: string;
   discoveryMode: InstitutionOpportunityDiscoveryMode;
+  recordType: InstitutionDiscoveryRecordType;
+  excerpt?: string;
+  postedAt?: string;
+  rank: number;
   sourceId: string;
   changedFields?: string[];
 }
