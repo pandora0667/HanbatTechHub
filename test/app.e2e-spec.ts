@@ -7,6 +7,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { RedisService } from '../src/modules/redis/redis.service';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { InstitutionHomepageSourceGateway } from '../src/modules/institution-intelligence/infrastructure/gateways/institution-homepage-source.gateway';
 
 class InMemoryRedisService {
   private readonly store = new Map<string, string>();
@@ -59,6 +60,21 @@ describe('AppController (e2e)', () => {
     })
       .overrideProvider(RedisService)
       .useValue(new InMemoryRedisService())
+      .overrideProvider(InstitutionHomepageSourceGateway)
+      .useValue({
+        fetchPages: jest.fn(async (institution: { officialEntryUrl: string }) => [
+          {
+            url: institution.officialEntryUrl,
+            html: `
+              <html><body>
+                <a href="/notice">학사공지</a>
+                <a href="/scholarship">장학 안내</a>
+                <a href="/career">취업지원센터</a>
+              </body></html>
+            `,
+          },
+        ]),
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -244,7 +260,7 @@ describe('AppController (e2e)', () => {
         summary: expect.objectContaining({
           totalBlueprints: expect.any(Number),
           implementedBlueprints: expect.any(Number),
-          registeredSources: 2,
+          registeredSources: 3,
         }),
         services: expect.any(Array),
         registeredSources: expect.any(Array),
@@ -261,6 +277,32 @@ describe('AppController (e2e)', () => {
           sourceId: 'institution.hanbat.menu',
         }),
       ]),
+    );
+  });
+
+  it('/api/v1/institutions/SNU/discovery (GET)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/institutions/SNU/discovery')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        generatedAt: expect.any(String),
+        institution: expect.objectContaining({
+          id: 'SNU',
+        }),
+        snapshot: expect.objectContaining({
+          collectedAt: expect.any(String),
+          sourceIds: ['institution.snu.discovery'],
+        }),
+        summary: expect.objectContaining({
+          coveredServiceTypes: expect.any(Number),
+          totalRequestedServiceTypes: expect.any(Number),
+          totalDiscoveredLinks: expect.any(Number),
+          pagesVisited: expect.any(Number),
+        }),
+        sections: expect.any(Array),
+      }),
     );
   });
 
@@ -287,6 +329,12 @@ describe('AppController (e2e)', () => {
           sourceIds: expect.any(Array),
         }),
         summary: expect.objectContaining({
+          discoveryMode: expect.any(String),
+          discoveredServiceTypes: expect.any(Number),
+          requestedServiceTypes: expect.any(Number),
+          discoveredLinks: expect.any(Number),
+          pagesVisited: expect.any(Number),
+          registeredSources: expect.any(Number),
           regularNotices: expect.any(Number),
           newNotices: expect.any(Number),
           featuredNotices: expect.any(Number),
@@ -300,22 +348,39 @@ describe('AppController (e2e)', () => {
           newNotices: expect.any(Array),
           featuredNotices: expect.any(Array),
           weeklyMenus: expect.any(Array),
+          serviceCatalog: expect.any(Array),
+          discoveredServices: expect.any(Array),
           sources: expect.any(Array),
         }),
       }),
     );
   });
 
-  it('/api/v1/institutions/SNU/overview (GET) returns 404 before implementation', async () => {
+  it('/api/v1/institutions/SNU/overview (GET)', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/v1/institutions/SNU/overview')
-      .expect(404);
+      .expect(200);
 
     expect(response.body).toEqual(
       expect.objectContaining({
-        statusCode: 404,
-        error: 'Not Found',
-        message: 'Institution overview is not implemented yet for SNU',
+        generatedAt: expect.any(String),
+        institution: expect.objectContaining({
+          id: 'SNU',
+          overviewAvailable: true,
+        }),
+        summary: expect.objectContaining({
+          discoveryMode: expect.any(String),
+          discoveredServiceTypes: expect.any(Number),
+          regularNotices: 0,
+          weeklyMenus: 0,
+        }),
+        sections: expect.objectContaining({
+          latestNotices: [],
+          weeklyMenus: [],
+          serviceCatalog: expect.any(Array),
+          discoveredServices: expect.any(Array),
+          sources: expect.any(Array),
+        }),
       }),
     );
   });

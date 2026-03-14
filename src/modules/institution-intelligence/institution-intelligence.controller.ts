@@ -6,6 +6,7 @@ import {
 } from './constants/institution-registry.constant';
 import {
   InstitutionCatalogResponseDto,
+  InstitutionDiscoveryResponseDto,
   InstitutionOverviewResponseDto,
   InstitutionRegistryResponseDto,
 } from './dto/institution.response.dto';
@@ -49,6 +50,28 @@ export class InstitutionIntelligenceController {
     institution: InstitutionType,
   ): InstitutionCatalogResponseDto {
     return this.institutionIntelligenceService.getInstitutionCatalog(institution);
+  }
+
+  @Get(':institution/discovery')
+  @ApiOperation({
+    summary: 'institution public service discovery 조회',
+  })
+  @ApiParam({
+    name: 'institution',
+    enum: Object.values(INSTITUTION_ENUM),
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'institution discovery snapshot',
+    type: InstitutionDiscoveryResponseDto,
+  })
+  getInstitutionDiscovery(
+    @Param('institution', new ParseEnumPipe(INSTITUTION_ENUM))
+    institution: InstitutionType,
+  ): Promise<InstitutionDiscoveryResponseDto> {
+    return this.institutionIntelligenceService.getInstitutionDiscovery(
+      institution,
+    );
   }
 
   @Get(':institution/overview')

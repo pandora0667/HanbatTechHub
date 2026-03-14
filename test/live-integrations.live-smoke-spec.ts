@@ -104,7 +104,15 @@ import { GetSourceHealthUseCase } from '../src/modules/source-registry/applicati
 import { InstitutionIntelligenceService } from '../src/modules/institution-intelligence/institution-intelligence.service';
 import { GetInstitutionsUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institutions.use-case';
 import { GetInstitutionCatalogUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-catalog.use-case';
+import { GetInstitutionDiscoveryUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-discovery.use-case';
 import { GetInstitutionOverviewUseCase } from '../src/modules/institution-intelligence/application/use-cases/get-institution-overview.use-case';
+import {
+  INSTITUTION_DISCOVERY_REPOSITORY,
+} from '../src/modules/institution-intelligence/application/ports/institution-discovery.repository';
+import { InstitutionHomepageSourceGateway } from '../src/modules/institution-intelligence/infrastructure/gateways/institution-homepage-source.gateway';
+import { InstitutionLinkDiscoveryService } from '../src/modules/institution-intelligence/domain/services/institution-link-discovery.service';
+import { RedisInstitutionDiscoveryRepository } from '../src/modules/institution-intelligence/infrastructure/persistence/redis-institution-discovery.repository';
+import { UpdateInstitutionDiscoveryCacheUseCase } from '../src/modules/institution-intelligence/application/use-cases/update-institution-discovery-cache.use-case';
 import { ContentIntelligenceService } from '../src/modules/content-intelligence/content-intelligence.service';
 import { GetContentFeedUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-feed.use-case';
 import { GetContentTrendsUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-trends.use-case';
@@ -301,7 +309,16 @@ describeLive('Live Integration Smoke', () => {
         InstitutionIntelligenceService,
         GetInstitutionsUseCase,
         GetInstitutionCatalogUseCase,
+        GetInstitutionDiscoveryUseCase,
         GetInstitutionOverviewUseCase,
+        UpdateInstitutionDiscoveryCacheUseCase,
+        InstitutionLinkDiscoveryService,
+        InstitutionHomepageSourceGateway,
+        RedisInstitutionDiscoveryRepository,
+        {
+          provide: INSTITUTION_DISCOVERY_REPOSITORY,
+          useExisting: RedisInstitutionDiscoveryRepository,
+        },
         ContentIntelligenceService,
         GetContentFeedUseCase,
         GetContentTrendsUseCase,
@@ -457,16 +474,67 @@ describeLive('Live Integration Smoke', () => {
       ]),
     );
     expect(response.institution.id).toBe('HANBAT');
+    expect(response.summary.discoveryMode).toMatch(/live|catalog_fallback/);
     expect(response.summary.regularNotices).toBeGreaterThan(0);
     expect(response.summary.weeklyMenus).toBe(7);
     expect(response.sections.latestNotices.length).toBeGreaterThan(0);
     expect(response.sections.weeklyMenus).toHaveLength(7);
+    expect(response.sections.discoveredServices.length).toBeGreaterThan(0);
+    expect(response.sections.serviceCatalog.length).toBeGreaterThan(0);
     expect(response.sections.sources).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ id: 'institution.hanbat.discovery' }),
         expect.objectContaining({ id: 'institution.hanbat.menu' }),
         expect.objectContaining({ id: 'institution.hanbat.notice' }),
       ]),
     );
+  });
+
+  it('discovers live public institution surfaces for wave-1 schools', async () => {
+    const waveOneInstitutions = [
+      'HANBAT',
+      'KANGWON',
+      'SEOULTECH',
+      'KMOU',
+      'GINUE',
+      'SNU',
+      'INU',
+      'KNOU',
+    ] as const;
+
+    for (const institution of waveOneInstitutions) {
+      const response =
+        await institutionIntelligenceService.getInstitutionDiscovery(institution);
+
+      expect(response.institution.id).toBe(institution);
+      expect(response.snapshot).toEqual(
+        expect.objectContaining({
+          collectedAt: expect.any(String),
+          sourceIds: [`institution.${institution.toLowerCase()}.discovery`],
+        }),
+      );
+      expect(response.summary.totalRequestedServiceTypes).toBeGreaterThan(0);
+      expect(response.summary.pagesVisited).toBeGreaterThan(0);
+      expect(response.summary.totalDiscoveredLinks).toBeGreaterThan(0);
+    }
+  });
+
+  it('builds institution overview for every registered national university', async () => {
+    const registry = institutionIntelligenceService.getInstitutions();
+
+    for (const institution of registry.institutions) {
+      const response = await institutionIntelligenceService.getInstitutionOverview(
+        institution.id as never,
+      );
+
+      expect(response.institution.id).toBe(institution.id);
+      expect(response.summary.requestedServiceTypes).toBeGreaterThan(0);
+      expect(response.summary.discoveredServiceTypes).toBeGreaterThan(0);
+      expect(response.summary.discoveredLinks).toBeGreaterThan(0);
+      expect(response.sections.discoveredServices.length).toBeGreaterThan(0);
+      expect(response.sections.serviceCatalog.length).toBeGreaterThan(0);
+      expect(response.sections.sources.length).toBeGreaterThan(0);
+    }
   });
 
   it('builds live content feed and trends from cached content snapshots', async () => {

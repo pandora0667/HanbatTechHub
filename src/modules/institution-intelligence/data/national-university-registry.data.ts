@@ -30,6 +30,11 @@ export interface InstitutionRegistryEntry {
   audience: InstitutionAudience;
   institutionType: InstitutionCategory;
   officialEntryUrl: string;
+  discoverySeedUrls: string[];
+  requestOptions?: {
+    rejectUnauthorized?: boolean;
+    insecureHttpParser?: boolean;
+  };
   siteFamily: InstitutionSiteFamily;
   rolloutWave: 1 | 2 | 3;
   rolloutStatus: InstitutionRolloutStatus;
@@ -85,6 +90,11 @@ interface RegistrySeed {
   institutionType: InstitutionCategory;
   audience?: InstitutionAudience;
   officialEntryUrl: string;
+  discoverySeedUrls?: string[];
+  requestOptions?: {
+    rejectUnauthorized?: boolean;
+    insecureHttpParser?: boolean;
+  };
   siteFamily: InstitutionSiteFamily;
   rolloutWave: 1 | 2 | 3;
   rolloutStatus: InstitutionRolloutStatus;
@@ -96,6 +106,7 @@ interface RegistrySeed {
 function createRegistryEntry(seed: RegistrySeed): InstitutionRegistryEntry {
   return {
     audience: seed.audience ?? 'college_students',
+    discoverySeedUrls: seed.discoverySeedUrls ?? [seed.officialEntryUrl],
     implementedServiceTypes: seed.implementedServiceTypes ?? [],
     sourceIds: seed.sourceIds ?? [],
     ...seed,
@@ -109,6 +120,7 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '충청권',
     institutionType: 'national_central_university',
     officialEntryUrl: 'https://www.hanbat.ac.kr/',
+    discoverySeedUrls: ['https://www.hanbat.ac.kr/kor/main.do'],
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.CUSTOM_ROOT,
     rolloutWave: 1,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.IMPLEMENTED,
@@ -125,6 +137,10 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '수도·강원권',
     institutionType: 'flagship_national_university',
     officialEntryUrl: 'https://www.kangwon.ac.kr/intro/intro_10.html',
+    discoverySeedUrls: [
+      'https://www.kangwon.ac.kr/ko/main.do',
+      'https://www.kangwon.ac.kr/',
+    ],
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.HTML_PORTAL,
     rolloutWave: 1,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PILOT,
@@ -181,6 +197,10 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '수도권',
     institutionType: 'national_university_corporation',
     officialEntryUrl: 'https://www.inu.ac.kr/',
+    discoverySeedUrls: [
+      'https://www.inu.ac.kr/inu/index.do',
+      'https://job.inu.ac.kr/',
+    ],
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.CUSTOM_ROOT,
     rolloutWave: 1,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PILOT,
@@ -327,6 +347,10 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '영남권',
     institutionType: 'national_central_university',
     officialEntryUrl: 'https://www.gknu.ac.kr/',
+    discoverySeedUrls: ['https://www.gknu.ac.kr/main/'],
+    requestOptions: {
+      rejectUnauthorized: false,
+    },
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.CUSTOM_ROOT,
     rolloutWave: 3,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PLANNED,
@@ -382,6 +406,10 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '호남·제주권',
     institutionType: 'national_central_university',
     officialEntryUrl: 'https://www.mmu.ac.kr/main',
+    discoverySeedUrls: ['https://www.mmu.ac.kr/mmu/main.do'],
+    requestOptions: {
+      insecureHttpParser: true,
+    },
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.CUSTOM_ROOT,
     rolloutWave: 3,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PLANNED,
@@ -485,6 +513,9 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     region: '호남·제주권',
     institutionType: 'flagship_national_university',
     officialEntryUrl: 'https://www.jejunu.ac.kr/',
+    requestOptions: {
+      rejectUnauthorized: false,
+    },
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.CUSTOM_ROOT,
     rolloutWave: 3,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PLANNED,
@@ -533,6 +564,7 @@ export const INSTITUTION_REGISTRY: InstitutionRegistryEntry[] = [
     institutionType: 'teacher_training_university',
     audience: 'teacher_track_students',
     officialEntryUrl: 'https://knue.ac.kr/smain.html',
+    discoverySeedUrls: ['https://knue.ac.kr/www/index.do'],
     siteFamily: INSTITUTION_SITE_FAMILY_ENUM.HTML_PORTAL,
     rolloutWave: 3,
     rolloutStatus: INSTITUTION_ROLLOUT_STATUS_ENUM.PLANNED,

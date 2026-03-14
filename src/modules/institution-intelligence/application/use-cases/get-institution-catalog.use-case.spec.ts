@@ -49,7 +49,7 @@ describe('GetInstitutionCatalogUseCase', () => {
     const result = useCase.execute('SNU');
 
     expect(result.institution.rolloutStatus).toBe('pilot');
-    expect(result.institution.overviewAvailable).toBe(false);
+    expect(result.institution.overviewAvailable).toBe(true);
     expect(result.summary.implementedBlueprints).toBe(0);
     expect(result.services.length).toBeGreaterThan(0);
   });

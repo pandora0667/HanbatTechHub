@@ -1,5 +1,10 @@
 import { SourceRegistryEntry } from '../../common/types/snapshot.types';
 import { TECH_BLOG_RSS, DEFAULT_REDIS_TTL } from '../blog/constants/blog.constant';
+import {
+  INSTITUTION_DISCOVERY_CACHE_TTL,
+  getInstitutionDiscoverySourceId,
+} from '../institution-intelligence/constants/institution-discovery.constant';
+import { INSTITUTION_REGISTRY } from '../institution-intelligence/constants/institution-registry.constant';
 import { INSTITUTION_SOURCE_CATALOG } from '../institution-intelligence/data/institution-source-catalog.data';
 import { JOBS_FRESHNESS_TTL } from '../jobs/constants/redis.constant';
 import { JOB_SOURCE_DESCRIPTORS } from '../jobs/constants/job-source.constant';
@@ -35,6 +40,32 @@ const INSTITUTION_SOURCES: SourceRegistryEntry[] = INSTITUTION_SOURCE_CATALOG
         ? '학교 공개 AJAX 응답을 스냅샷으로 수집합니다.'
         : '공개 공지 게시판을 저빈도로 스냅샷 수집합니다.',
   }));
+
+const INSTITUTION_DISCOVERY_SOURCES: SourceRegistryEntry[] = INSTITUTION_REGISTRY.map(
+  (institution) => ({
+    id: getInstitutionDiscoverySourceId(institution.id),
+    name: `${institution.name} public service discovery`,
+    provider: institution.id,
+    context: 'institution' as const,
+    collectionMode: 'html' as const,
+    tier: 'public_page' as const,
+    active: true,
+    state: 'active' as const,
+    collectionUrl: institution.officialEntryUrl,
+    maxCollectionsPerDay: 3,
+    minimumIntervalHours: 8,
+    freshnessTtlSeconds: INSTITUTION_DISCOVERY_CACHE_TTL,
+    confidence: 0.72,
+    riskTier:
+      institution.siteFamily === 'custom-root' ? 'medium' : 'low',
+    safeCollectionPolicy:
+      'homepage-only low-frequency discovery snapshot with bounded candidate URLs',
+    notes:
+      institution.rolloutWave === 1
+        ? 'Wave-1 institution discovery target.'
+        : 'Nationwide institution discovery registry source.',
+  }),
+);
 
 const JOB_SOURCES: SourceRegistryEntry[] = JOB_SOURCE_DESCRIPTORS.map(
   (source) => ({
@@ -87,6 +118,7 @@ const BLOG_SOURCES: SourceRegistryEntry[] = Object.entries(TECH_BLOG_RSS).map(
 
 export const SOURCE_REGISTRY: SourceRegistryEntry[] = [
   ...INSTITUTION_SOURCES,
+  ...INSTITUTION_DISCOVERY_SOURCES,
   ...JOB_SOURCES,
   ...BLOG_SOURCES,
 ].sort((left, right) =>

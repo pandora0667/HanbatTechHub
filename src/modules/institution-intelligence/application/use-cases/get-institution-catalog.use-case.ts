@@ -6,6 +6,10 @@ import {
 } from '../../constants/institution-registry.constant';
 import { InstitutionCatalogResponseDto } from '../../dto/institution.response.dto';
 import { getInstitutionSourceCatalogEntries } from '../../data/institution-source-catalog.data';
+import {
+  getInstitutionRegisteredSourceIds,
+  mapInstitutionRegistryItem,
+} from '../../utils/institution-registry-response.util';
 
 @Injectable()
 export class GetInstitutionCatalogUseCase {
@@ -19,28 +23,15 @@ export class GetInstitutionCatalogUseCase {
     }
 
     const services = getInstitutionSourceCatalogEntries(institution);
+    const registeredSourceIds = getInstitutionRegisteredSourceIds(registryEntry);
     const registeredSources = this.sourceRegistryService
       .list()
-      .filter((source) => registryEntry.sourceIds.includes(source.id))
+      .filter((source) => registeredSourceIds.includes(source.id))
       .sort((left, right) => left.id.localeCompare(right.id));
 
     return {
       generatedAt: new Date().toISOString(),
-      institution: {
-        id: registryEntry.id,
-        name: registryEntry.name,
-        region: registryEntry.region,
-        audience: registryEntry.audience,
-        institutionType: registryEntry.institutionType,
-        officialEntryUrl: registryEntry.officialEntryUrl,
-        siteFamily: registryEntry.siteFamily,
-        rolloutWave: registryEntry.rolloutWave,
-        rolloutStatus: registryEntry.rolloutStatus,
-        overviewAvailable: registryEntry.sourceIds.length > 0,
-        priorityServiceTypes: [...registryEntry.priorityServiceTypes],
-        implementedServiceTypes: [...registryEntry.implementedServiceTypes],
-        sourceIds: [...registryEntry.sourceIds],
-      },
+      institution: mapInstitutionRegistryItem(registryEntry),
       summary: {
         totalBlueprints: services.length,
         implementedBlueprints: services.filter(

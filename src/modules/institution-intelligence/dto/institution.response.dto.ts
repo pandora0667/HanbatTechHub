@@ -103,46 +103,6 @@ class InstitutionMenuPreviewDto {
   dinner: string[];
 }
 
-class InstitutionOverviewSummaryDto {
-  @ApiProperty()
-  regularNotices: number;
-
-  @ApiProperty()
-  newNotices: number;
-
-  @ApiProperty()
-  featuredNotices: number;
-
-  @ApiProperty()
-  todayNotices: number;
-
-  @ApiProperty()
-  weeklyMenus: number;
-
-  @ApiProperty()
-  lunchAvailableDays: number;
-
-  @ApiProperty()
-  dinnerAvailableDays: number;
-}
-
-class InstitutionOverviewSectionsDto {
-  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
-  latestNotices: InstitutionNoticePreviewDto[];
-
-  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
-  newNotices: InstitutionNoticePreviewDto[];
-
-  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
-  featuredNotices: InstitutionNoticePreviewDto[];
-
-  @ApiProperty({ type: [InstitutionMenuPreviewDto] })
-  weeklyMenus: InstitutionMenuPreviewDto[];
-
-  @ApiProperty({ type: [SourceRegistryItemDto] })
-  sources: SourceRegistryItemDto[];
-}
-
 class InstitutionCatalogSourceDto {
   @ApiProperty({
     type: String,
@@ -223,6 +183,137 @@ class InstitutionCatalogSummaryDto {
   registeredSources: number;
 }
 
+class InstitutionDiscoveryLinkDto {
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty()
+  pageUrl: string;
+
+  @ApiProperty({ type: [String] })
+  matchedKeywords: string[];
+
+  @ApiProperty()
+  score: number;
+}
+
+class InstitutionDiscoverySectionDto {
+  @ApiProperty({
+    type: String,
+    enum: [
+      'academic_notice',
+      'academic_calendar',
+      'scholarship',
+      'career_program',
+      'job_fair',
+      'field_practice',
+      'internship',
+      'extracurricular',
+      'mentoring',
+      'startup',
+      'global_program',
+      'support',
+      'dormitory',
+      'meal',
+    ],
+  })
+  serviceType: InstitutionServiceType;
+
+  @ApiProperty()
+  linkCount: number;
+
+  @ApiProperty({ type: [InstitutionDiscoveryLinkDto] })
+  links: InstitutionDiscoveryLinkDto[];
+}
+
+class InstitutionDiscoverySummaryDto {
+  @ApiProperty({
+    enum: ['live', 'catalog_fallback'],
+  })
+  mode: 'live' | 'catalog_fallback';
+
+  @ApiProperty()
+  coveredServiceTypes: number;
+
+  @ApiProperty()
+  totalRequestedServiceTypes: number;
+
+  @ApiProperty()
+  totalDiscoveredLinks: number;
+
+  @ApiProperty()
+  pagesVisited: number;
+}
+
+class InstitutionOverviewSummaryDto {
+  @ApiProperty({
+    enum: ['live', 'catalog_fallback'],
+  })
+  discoveryMode: 'live' | 'catalog_fallback';
+
+  @ApiProperty()
+  discoveredServiceTypes: number;
+
+  @ApiProperty()
+  requestedServiceTypes: number;
+
+  @ApiProperty()
+  discoveredLinks: number;
+
+  @ApiProperty()
+  pagesVisited: number;
+
+  @ApiProperty()
+  registeredSources: number;
+
+  @ApiProperty()
+  regularNotices: number;
+
+  @ApiProperty()
+  newNotices: number;
+
+  @ApiProperty()
+  featuredNotices: number;
+
+  @ApiProperty()
+  todayNotices: number;
+
+  @ApiProperty()
+  weeklyMenus: number;
+
+  @ApiProperty()
+  lunchAvailableDays: number;
+
+  @ApiProperty()
+  dinnerAvailableDays: number;
+}
+
+class InstitutionOverviewSectionsDto {
+  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
+  latestNotices: InstitutionNoticePreviewDto[];
+
+  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
+  newNotices: InstitutionNoticePreviewDto[];
+
+  @ApiProperty({ type: [InstitutionNoticePreviewDto] })
+  featuredNotices: InstitutionNoticePreviewDto[];
+
+  @ApiProperty({ type: [InstitutionMenuPreviewDto] })
+  weeklyMenus: InstitutionMenuPreviewDto[];
+
+  @ApiProperty({ type: [InstitutionCatalogSourceDto] })
+  serviceCatalog: InstitutionCatalogSourceDto[];
+
+  @ApiProperty({ type: [InstitutionDiscoverySectionDto] })
+  discoveredServices: InstitutionDiscoverySectionDto[];
+
+  @ApiProperty({ type: [SourceRegistryItemDto] })
+  sources: SourceRegistryItemDto[];
+}
+
 export class InstitutionRegistryResponseDto {
   @ApiProperty({ type: [InstitutionRegistryItemDto] })
   institutions: InstitutionRegistryItemDto[];
@@ -260,4 +351,21 @@ export class InstitutionCatalogResponseDto {
 
   @ApiProperty({ type: [SourceRegistryItemDto] })
   registeredSources: SourceRegistryItemDto[];
+}
+
+export class InstitutionDiscoveryResponseDto {
+  @ApiProperty()
+  generatedAt: string;
+
+  @ApiProperty({ type: InstitutionRegistryItemDto })
+  institution: InstitutionRegistryItemDto;
+
+  @ApiProperty({ type: SnapshotDto })
+  snapshot: SnapshotDto;
+
+  @ApiProperty({ type: InstitutionDiscoverySummaryDto })
+  summary: InstitutionDiscoverySummaryDto;
+
+  @ApiProperty({ type: [InstitutionDiscoverySectionDto] })
+  sections: InstitutionDiscoverySectionDto[];
 }

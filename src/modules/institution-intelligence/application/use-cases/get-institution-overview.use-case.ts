@@ -29,6 +29,12 @@ import {
   InstitutionType,
 } from '../../constants/institution-registry.constant';
 import { InstitutionOverviewResponseDto } from '../../dto/institution.response.dto';
+import { GetInstitutionDiscoveryUseCase } from './get-institution-discovery.use-case';
+import { getInstitutionSourceCatalogEntries } from '../../data/institution-source-catalog.data';
+import {
+  getInstitutionRegisteredSourceIds,
+  mapInstitutionRegistryItem,
+} from '../../utils/institution-registry-response.util';
 
 @Injectable()
 export class GetInstitutionOverviewUseCase {
@@ -39,6 +45,7 @@ export class GetInstitutionOverviewUseCase {
     private readonly noticeCacheRepository: NoticeCacheRepository,
     private readonly menuCalendarService: MenuCalendarService,
     private readonly sourceRegistryService: SourceRegistryService,
+    private readonly getInstitutionDiscoveryUseCase: GetInstitutionDiscoveryUseCase,
   ) {}
 
   async execute(
@@ -50,10 +57,89 @@ export class GetInstitutionOverviewUseCase {
       throw new NotFoundException(`Unsupported institution: ${institution}`);
     }
 
-    if (registryEntry.sourceIds.length === 0) {
-      throw new NotFoundException(
-        `Institution overview is not implemented yet for ${institution}`,
-      );
+    const [discovery, campusSnapshot] = await Promise.all([
+      this.getInstitutionDiscoveryUseCase.execute(institution),
+      this.loadInstitutionCampusSnapshot(institution),
+    ]);
+    const catalog = getInstitutionSourceCatalogEntries(institution);
+    const registeredSourceIds = getInstitutionRegisteredSourceIds(registryEntry);
+    const registeredSources = this.sourceRegistryService
+      .list()
+      .filter((source) => registeredSourceIds.includes(source.id))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const mergedSnapshot = mergeSnapshotMetadata(
+      [discovery.snapshot, campusSnapshot.snapshot].filter(
+        (snapshot): snapshot is SnapshotMetadata => snapshot !== undefined,
+      ),
+    );
+    const menus = campusSnapshot.weeklyMenus;
+    const notices = campusSnapshot.regularNotices;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      institution: mapInstitutionRegistryItem(registryEntry),
+      snapshot: mergedSnapshot,
+      summary: {
+        discoveryMode: discovery.summary.mode,
+        discoveredServiceTypes: discovery.summary.coveredServiceTypes,
+        requestedServiceTypes: discovery.summary.totalRequestedServiceTypes,
+        discoveredLinks: discovery.summary.totalDiscoveredLinks,
+        pagesVisited: discovery.summary.pagesVisited,
+        registeredSources: registeredSources.length,
+        regularNotices: notices.length,
+        newNotices: campusSnapshot.newNotices.length,
+        featuredNotices: campusSnapshot.featuredNotices.length,
+        todayNotices: campusSnapshot.todayNotices.length,
+        weeklyMenus: menus.length,
+        lunchAvailableDays: menus.filter((menu) => menu.lunch.length > 0).length,
+        dinnerAvailableDays: menus.filter((menu) => menu.dinner.length > 0).length,
+      },
+      sections: {
+        latestNotices: notices.slice(0, 5).map((notice) => ({
+          nttId: notice.nttId,
+          title: notice.title,
+          author: notice.author,
+          date: notice.date,
+          link: notice.link,
+        })),
+        newNotices: campusSnapshot.newNotices.slice(0, 5).map((notice) => ({
+          nttId: notice.nttId,
+          title: notice.title,
+          author: notice.author,
+          date: notice.date,
+          link: notice.link,
+        })),
+        featuredNotices: campusSnapshot.featuredNotices
+          .slice(0, 5)
+          .map((notice) => ({
+          nttId: notice.nttId,
+          title: notice.title,
+          author: notice.author,
+          date: notice.date,
+          link: notice.link,
+          })),
+        weeklyMenus: menus.map((menu) => ({
+          date: menu.date,
+          lunch: [...menu.lunch],
+          dinner: [...menu.dinner],
+        })),
+        serviceCatalog: catalog,
+        discoveredServices: discovery.sections,
+        sources: registeredSources,
+      },
+    };
+  }
+
+  private async loadInstitutionCampusSnapshot(institution: InstitutionType) {
+    if (institution !== 'HANBAT') {
+      return {
+        regularNotices: [],
+        newNotices: [],
+        featuredNotices: [],
+        todayNotices: [],
+        weeklyMenus: [],
+        snapshot: undefined,
+      };
     }
 
     const mondayDate = this.menuCalendarService.formatDate(
@@ -92,73 +178,18 @@ export class GetInstitutionOverviewUseCase {
           sourceIds: [MENU_SOURCE_ID],
         })
       : undefined;
-    const mergedSnapshot = mergeSnapshotMetadata(
-      [noticeSnapshot, menuSnapshot].filter(
-        (snapshot): snapshot is SnapshotMetadata => snapshot !== undefined,
-      ),
-    );
-    const menus = weeklyMenus ?? [];
-    const notices = regularNotices ?? [];
 
     return {
-      generatedAt: new Date().toISOString(),
-      institution: {
-        id: registryEntry.id,
-        name: registryEntry.name,
-        region: registryEntry.region,
-        audience: registryEntry.audience,
-        institutionType: registryEntry.institutionType,
-        officialEntryUrl: registryEntry.officialEntryUrl,
-        siteFamily: registryEntry.siteFamily,
-        rolloutWave: registryEntry.rolloutWave,
-        rolloutStatus: registryEntry.rolloutStatus,
-        overviewAvailable: true,
-        priorityServiceTypes: [...registryEntry.priorityServiceTypes],
-        implementedServiceTypes: [...registryEntry.implementedServiceTypes],
-        sourceIds: [...registryEntry.sourceIds],
-      },
-      snapshot: mergedSnapshot,
-      summary: {
-        regularNotices: notices.length,
-        newNotices: (newNotices ?? []).length,
-        featuredNotices: (featuredNotices ?? []).length,
-        todayNotices: (todayNotices ?? []).length,
-        weeklyMenus: menus.length,
-        lunchAvailableDays: menus.filter((menu) => menu.lunch.length > 0).length,
-        dinnerAvailableDays: menus.filter((menu) => menu.dinner.length > 0).length,
-      },
-      sections: {
-        latestNotices: notices.slice(0, 5).map((notice) => ({
-          nttId: notice.nttId,
-          title: notice.title,
-          author: notice.author,
-          date: notice.date,
-          link: notice.link,
-        })),
-        newNotices: (newNotices ?? []).slice(0, 5).map((notice) => ({
-          nttId: notice.nttId,
-          title: notice.title,
-          author: notice.author,
-          date: notice.date,
-          link: notice.link,
-        })),
-        featuredNotices: (featuredNotices ?? []).slice(0, 5).map((notice) => ({
-          nttId: notice.nttId,
-          title: notice.title,
-          author: notice.author,
-          date: notice.date,
-          link: notice.link,
-        })),
-        weeklyMenus: menus.map((menu) => ({
-          date: menu.date,
-          lunch: [...menu.lunch],
-          dinner: [...menu.dinner],
-        })),
-        sources: this.sourceRegistryService
-          .list()
-          .filter((source) => registryEntry.sourceIds.includes(source.id))
-          .sort((left, right) => left.id.localeCompare(right.id)),
-      },
+      regularNotices: regularNotices ?? [],
+      newNotices: newNotices ?? [],
+      featuredNotices: featuredNotices ?? [],
+      todayNotices: todayNotices ?? [],
+      weeklyMenus: weeklyMenus ?? [],
+      snapshot: mergeSnapshotMetadata(
+        [noticeSnapshot, menuSnapshot].filter(
+          (snapshot): snapshot is SnapshotMetadata => snapshot !== undefined,
+        ),
+      ),
     };
   }
 }
