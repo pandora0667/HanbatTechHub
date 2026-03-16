@@ -91,6 +91,74 @@ class ContentTrendSummaryDto {
 
   @ApiProperty()
   totalTopics: number;
+
+  @ApiProperty()
+  historyPoints: number;
+}
+
+class ContentTrendHistorySummaryDto {
+  @ApiProperty()
+  historyPoints: number;
+
+  @ApiProperty()
+  windowDays: number;
+
+  @ApiProperty({ required: false })
+  baselineCollectedAt?: string;
+
+  @ApiProperty({ required: false })
+  latestCollectedAt?: string;
+
+  @ApiProperty()
+  totalItemsDelta: number;
+
+  @ApiProperty()
+  topicsTrackedDelta: number;
+}
+
+class ContentTrendTimelinePointDto {
+  @ApiProperty()
+  collectedAt: string;
+
+  @ApiProperty()
+  totalItems: number;
+
+  @ApiProperty()
+  companies: number;
+
+  @ApiProperty()
+  topicsTracked: number;
+}
+
+class ContentTrendMomentumItemDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  currentCount: number;
+
+  @ApiProperty()
+  baselineCount: number;
+
+  @ApiProperty()
+  delta: number;
+
+  @ApiProperty({ enum: ['up', 'down', 'flat'] })
+  direction: 'up' | 'down' | 'flat';
+}
+
+class ContentTrendHistoryDto {
+  @ApiProperty({ type: ContentTrendHistorySummaryDto })
+  summary: ContentTrendHistorySummaryDto;
+
+  @ApiProperty({ type: [ContentTrendTimelinePointDto] })
+  timeline: ContentTrendTimelinePointDto[];
+
+  @ApiProperty({ type: [ContentTrendMomentumItemDto] })
+  companyMomentum: ContentTrendMomentumItemDto[];
+
+  @ApiProperty({ type: [ContentTrendMomentumItemDto] })
+  topicMomentum: ContentTrendMomentumItemDto[];
 }
 
 export class ContentFeedResponseDto {
@@ -122,6 +190,9 @@ export class ContentTrendsResponseDto {
 
   @ApiProperty({ type: [ContentTrendItemDto] })
   trends: ContentTrendItemDto[];
+
+  @ApiProperty({ type: ContentTrendHistoryDto })
+  history: ContentTrendHistoryDto;
 
   @ApiProperty({ type: [SourceRegistryItemDto] })
   sources: SourceRegistryItemDto[];

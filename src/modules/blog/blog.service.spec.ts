@@ -17,6 +17,9 @@ import { RssBlogFeedReaderService } from './infrastructure/services/rss-blog-fee
 import { BLOG_POST_REPOSITORY } from './application/ports/blog-post.repository';
 import { BLOG_SOURCE_CATALOG } from './application/ports/blog-source-catalog';
 import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper';
+import { ContentTopicExtractorService } from '../content-intelligence/domain/services/content-topic-extractor.service';
+import { ContentSnapshotHistoryBuilderService } from '../content-intelligence/domain/services/content-snapshot-history-builder.service';
+import { SourceRuntimeRecorderService } from '../source-registry/application/services/source-runtime-recorder.service';
 
 describe('BlogService', () => {
   let service: BlogService;
@@ -45,6 +48,9 @@ describe('BlogService', () => {
         BlogSourceCatalogService,
         RssBlogFeedReaderService,
         BlogResponseMapper,
+        ContentTopicExtractorService,
+        ContentSnapshotHistoryBuilderService,
+        SourceRuntimeRecorderService,
         {
           provide: BLOG_POST_REPOSITORY,
           useExisting: RedisBlogPostRepository,

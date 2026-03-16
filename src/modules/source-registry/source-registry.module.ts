@@ -6,11 +6,19 @@ import { NoticeModule } from '../notice/notice.module';
 import { RedisModule } from '../redis/redis.module';
 import { GetSourceHealthUseCase } from './application/use-cases/get-source-health.use-case';
 import { SourceRuntimeStatusService } from './application/services/source-runtime-status.service';
+import { SourceRuntimeModule } from './source-runtime.module';
 import { SourceRegistryController } from './source-registry.controller';
 import { SourceRegistryService } from './source-registry.service';
 
 @Module({
-  imports: [JobsModule, BlogModule, NoticeModule, MenuModule, RedisModule],
+  imports: [
+    JobsModule,
+    BlogModule,
+    NoticeModule,
+    MenuModule,
+    RedisModule,
+    SourceRuntimeModule,
+  ],
   controllers: [SourceRegistryController],
   providers: [
     SourceRegistryService,

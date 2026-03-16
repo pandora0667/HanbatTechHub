@@ -35,4 +35,26 @@ export class GetContentTrendsQueryDto {
   @Min(1)
   @Max(50)
   limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: '시계열 history 포인트 수',
+    default: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  historyPoints?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'momentum 섹션 상위 개수',
+    default: 5,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  trendLimit?: number = 5;
 }

@@ -13,6 +13,7 @@ import { HanbatMenuSourceGateway } from './infrastructure/gateways/hanbat-menu-s
 import { MENU_CACHE_REPOSITORY } from './application/ports/menu-cache.repository';
 import { MENU_SOURCE_GATEWAY } from './application/ports/menu-source.gateway';
 import { MenuResponseMapper } from './presentation/mappers/menu-response.mapper';
+import { SourceRuntimeRecorderService } from '../source-registry/application/services/source-runtime-recorder.service';
 
 describe('MenuService', () => {
   let service: MenuService;
@@ -33,6 +34,7 @@ describe('MenuService', () => {
         UpdateMenuCacheUseCase,
         InitializeMenuCacheUseCase,
         MenuResponseMapper,
+        SourceRuntimeRecorderService,
         RedisMenuRepository,
         HanbatMenuSourceGateway,
         {

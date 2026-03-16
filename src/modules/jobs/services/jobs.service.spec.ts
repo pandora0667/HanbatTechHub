@@ -17,6 +17,7 @@ import { JobCrawlerRegistryService } from '../infrastructure/services/job-crawle
 import { RedisJobPostingCacheRepository } from '../infrastructure/persistence/redis-job-posting-cache.repository';
 import { JOB_CRAWLER_REGISTRY } from '../application/ports/job-crawler-registry';
 import { JOB_POSTING_CACHE_REPOSITORY } from '../application/ports/job-posting-cache.repository';
+import { SourceRuntimeRecorderService } from '../../source-registry/application/services/source-runtime-recorder.service';
 import {
   COMPANY_ENUM,
   EMPLOYMENT_TYPE,
@@ -87,6 +88,7 @@ describe('JobsService', () => {
           useExisting: RedisJobPostingCacheRepository,
         },
         { provide: RedisService, useValue: redisService },
+        SourceRuntimeRecorderService,
         { provide: CRAWLER_TOKEN, useValue: [crawler] },
       ],
     }).compile();

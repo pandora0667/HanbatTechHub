@@ -80,10 +80,27 @@ export const REDIS_KEYS = {
   BLOG_POSTS: 'hbnu:blog:posts',
   BLOG_COMPANY: 'hbnu:blog:company:',
   BLOG_LAST_UPDATE: 'hbnu:blog:last-update:',
+  BLOG_CONTENT_HISTORY: 'hbnu:blog:history:content',
 } as const;
 
 export const DEFAULT_REDIS_TTL = 24 * 60 * 60; // 24 hours
 export const BLOG_SOURCE_CONFIDENCE = 0.9;
+export const BLOG_CONTENT_HISTORY_LIMIT = parseInt(
+  process.env.BLOG_CONTENT_HISTORY_LIMIT || '30',
+  10,
+);
+export const BLOG_CONTENT_HISTORY_TTL = parseInt(
+  process.env.BLOG_CONTENT_HISTORY_TTL || '7776000',
+  10,
+);
+export const BLOG_CONTENT_HISTORY_WINDOW_DAYS = parseInt(
+  process.env.BLOG_CONTENT_HISTORY_WINDOW_DAYS || '30',
+  10,
+);
+export const BLOG_CONTENT_HISTORY_TOPIC_LIMIT = parseInt(
+  process.env.BLOG_CONTENT_HISTORY_TOPIC_LIMIT || '50',
+  10,
+);
 
 export function getBlogSourceId(company: string): string {
   return `content.blog.${company.toLowerCase()}`;

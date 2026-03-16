@@ -4,6 +4,7 @@ import {
   MenuCacheRepository,
 } from '../ports/menu-cache.repository';
 import { MenuLoaderService } from '../services/menu-loader.service';
+import { SourceRuntimeRecorderService } from '../../../source-registry/application/services/source-runtime-recorder.service';
 import { UpdateMenuCacheUseCase } from './update-menu-cache.use-case';
 
 describe('UpdateMenuCacheUseCase', () => {
@@ -23,6 +24,10 @@ describe('UpdateMenuCacheUseCase', () => {
   const menuLoaderService = {
     loadWeeklyMenu: jest.fn(),
   };
+  const sourceRuntimeRecorderService = {
+    recordSuccess: jest.fn(),
+    recordFailure: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +40,10 @@ describe('UpdateMenuCacheUseCase', () => {
         {
           provide: MenuLoaderService,
           useValue: menuLoaderService,
+        },
+        {
+          provide: SourceRuntimeRecorderService,
+          useValue: sourceRuntimeRecorderService,
         },
       ],
     }).compile();
@@ -80,6 +89,9 @@ describe('UpdateMenuCacheUseCase', () => {
       2,
       '2025-03-11',
       expect.any(String),
+    );
+    expect(sourceRuntimeRecorderService.recordSuccess).toHaveBeenCalledWith(
+      'institution.hanbat.menu',
     );
   });
 });

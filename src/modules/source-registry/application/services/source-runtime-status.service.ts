@@ -14,6 +14,7 @@ import { MENU_CACHE_REPOSITORY, MenuCacheRepository } from '../../../menu/applic
 import { NOTICE_CACHE_REPOSITORY, NoticeCacheRepository } from '../../../notice/application/ports/notice-cache.repository';
 import { RedisService } from '../../../redis/redis.service';
 import { formatDate, getMondayDate } from '../../../../common/utils/date.utils';
+import { SourceRuntimeRecorderService } from './source-runtime-recorder.service';
 
 const BLOG_SOURCE_PREFIX = 'content.blog.';
 const JOB_SOURCE_PREFIX = 'opportunity.jobs.';
@@ -31,9 +32,24 @@ export class SourceRuntimeStatusService {
     @Inject(MENU_CACHE_REPOSITORY)
     private readonly menuCacheRepository: MenuCacheRepository,
     private readonly redisService: RedisService,
+    private readonly sourceRuntimeRecorderService: SourceRuntimeRecorderService,
   ) {}
 
   async getLastSuccessAt(sourceId: string): Promise<string | null> {
+    const runtimeRecord =
+      await this.sourceRuntimeRecorderService.getRuntimeRecord(sourceId);
+    if (runtimeRecord?.lastSuccessAt) {
+      return runtimeRecord.lastSuccessAt;
+    }
+
+    return this.resolveSnapshotSuccessAt(sourceId);
+  }
+
+  async getRuntimeRecord(sourceId: string) {
+    return this.sourceRuntimeRecorderService.getRuntimeRecord(sourceId);
+  }
+
+  private async resolveSnapshotSuccessAt(sourceId: string): Promise<string | null> {
     if (sourceId.startsWith(JOB_SOURCE_PREFIX)) {
       const company = sourceId.substring(JOB_SOURCE_PREFIX.length).toUpperCase();
       const entry = await this.jobPostingCacheRepository.getCompanyJobs(company as never);

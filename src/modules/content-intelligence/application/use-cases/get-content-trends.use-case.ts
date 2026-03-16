@@ -16,6 +16,7 @@ import {
 import { SourceRegistryService } from '../../../source-registry/source-registry.service';
 import { GetContentTrendsQueryDto } from '../../dto/get-content-trends-query.dto';
 import { ContentTrendsResponseDto } from '../../dto/content-intelligence.response.dto';
+import { ContentSnapshotHistoryBuilderService } from '../../domain/services/content-snapshot-history-builder.service';
 import { ContentTopicExtractorService } from '../../domain/services/content-topic-extractor.service';
 
 @Injectable()
@@ -27,11 +28,14 @@ export class GetContentTrendsUseCase {
     private readonly blogSourceCatalog: BlogSourceCatalog,
     private readonly sourceRegistryService: SourceRegistryService,
     private readonly contentTopicExtractorService: ContentTopicExtractorService,
+    private readonly contentSnapshotHistoryBuilderService: ContentSnapshotHistoryBuilderService,
   ) {}
 
   async execute(
     query: GetContentTrendsQueryDto,
   ): Promise<ContentTrendsResponseDto> {
+    const historyLimit = query.historyPoints ?? 10;
+    const trendLimit = query.trendLimit ?? 5;
     const companies = this.blogSourceCatalog.listCodes();
     const posts = await this.blogPostRepository.getPostsForCompanies(companies);
     const windowStart = new Date();
@@ -63,6 +67,18 @@ export class GetContentTrendsUseCase {
     const snapshot = mergeSnapshotMetadata(
       snapshots.filter((entry) => entry !== undefined),
     );
+    const history = await this.blogPostRepository.getContentSnapshotHistory(
+      historyLimit,
+    );
+    const effectiveHistory =
+      snapshot
+        ? this.buildEffectiveHistory(
+            posts,
+            snapshot,
+            history,
+            historyLimit,
+          )
+        : history.slice(0, historyLimit);
 
     return {
       generatedAt: new Date().toISOString(),
@@ -72,11 +88,34 @@ export class GetContentTrendsUseCase {
         companies: new Set(filteredPosts.map((post) => post.company)).size,
         windowDays: query.days ?? 30,
         totalTopics: trends.length,
+        historyPoints: effectiveHistory.length,
       },
       trends,
+      history: this.contentSnapshotHistoryBuilderService.buildHistorySection(
+        effectiveHistory,
+        trendLimit,
+      ),
       sources: this.sourceRegistryService
         .list({ context: 'content' })
         .sort((left, right) => left.id.localeCompare(right.id)),
     };
+  }
+
+  private buildEffectiveHistory(
+    posts: Awaited<ReturnType<BlogPostRepository['getPostsForCompanies']>>,
+    snapshot: NonNullable<Awaited<ReturnType<typeof mergeSnapshotMetadata>>>,
+    history: Awaited<ReturnType<BlogPostRepository['getContentSnapshotHistory']>>,
+    limit: number,
+  ) {
+    const currentSnapshot = this.contentSnapshotHistoryBuilderService.build(
+      posts,
+      snapshot,
+    );
+
+    if (history[0]?.snapshot.collectedAt === currentSnapshot.snapshot.collectedAt) {
+      return history.slice(0, limit);
+    }
+
+    return [currentSnapshot, ...history].slice(0, limit);
   }
 }

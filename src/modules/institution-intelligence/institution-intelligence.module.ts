@@ -3,6 +3,7 @@ import { MenuModule } from '../menu/menu.module';
 import { NoticeModule } from '../notice/notice.module';
 import { RedisModule } from '../redis/redis.module';
 import { SourceRegistryModule } from '../source-registry/source-registry.module';
+import { SourceRuntimeModule } from '../source-registry/source-runtime.module';
 import { GetInstitutionCatalogUseCase } from './application/use-cases/get-institution-catalog.use-case';
 import {
   INSTITUTION_DISCOVERY_REPOSITORY,
@@ -21,7 +22,13 @@ import { RedisInstitutionDiscoveryRepository } from './infrastructure/persistenc
 import { InstitutionIntelligenceService } from './institution-intelligence.service';
 
 @Module({
-  imports: [MenuModule, NoticeModule, SourceRegistryModule, RedisModule],
+  imports: [
+    MenuModule,
+    NoticeModule,
+    SourceRegistryModule,
+    SourceRuntimeModule,
+    RedisModule,
+  ],
   controllers: [InstitutionIntelligenceController],
   providers: [
     InstitutionIntelligenceService,

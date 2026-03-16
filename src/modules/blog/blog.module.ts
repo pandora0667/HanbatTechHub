@@ -17,9 +17,12 @@ import { RssBlogFeedReaderService } from './infrastructure/services/rss-blog-fee
 import { BLOG_POST_REPOSITORY } from './application/ports/blog-post.repository';
 import { BLOG_SOURCE_CATALOG } from './application/ports/blog-source-catalog';
 import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper';
+import { ContentTopicExtractorService } from '../content-intelligence/domain/services/content-topic-extractor.service';
+import { ContentSnapshotHistoryBuilderService } from '../content-intelligence/domain/services/content-snapshot-history-builder.service';
+import { SourceRuntimeModule } from '../source-registry/source-runtime.module';
 
 @Module({
-  imports: [TranslationModule, RedisModule],
+  imports: [TranslationModule, RedisModule, SourceRuntimeModule],
   controllers: [BlogController],
   providers: [
     BlogService,
@@ -35,6 +38,8 @@ import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper'
     BlogSourceCatalogService,
     RssBlogFeedReaderService,
     BlogResponseMapper,
+    ContentTopicExtractorService,
+    ContentSnapshotHistoryBuilderService,
     {
       provide: BLOG_POST_REPOSITORY,
       useExisting: RedisBlogPostRepository,
@@ -44,6 +49,11 @@ import { BlogResponseMapper } from './presentation/mappers/blog-response.mapper'
       useExisting: BlogSourceCatalogService,
     },
   ],
-  exports: [BlogService, BLOG_POST_REPOSITORY, BLOG_SOURCE_CATALOG],
+  exports: [
+    BlogService,
+    BLOG_POST_REPOSITORY,
+    BLOG_SOURCE_CATALOG,
+    ContentSnapshotHistoryBuilderService,
+  ],
 })
 export class BlogModule {}

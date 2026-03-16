@@ -7,6 +7,8 @@ import {
 import { CompanyType, JobPosting } from '../../interfaces/job-posting.interface';
 import { JobCrawlerExecutionService } from './job-crawler-execution.service';
 import { IJobCrawler } from '../../interfaces/job-crawler.interface';
+import { SourceRuntimeRecorderService } from '../../../source-registry/application/services/source-runtime-recorder.service';
+import { getJobSourceDescriptor } from '../../constants/job-source.constant';
 
 @Injectable()
 export class JobPostingCollectorService {
@@ -16,15 +18,29 @@ export class JobPostingCollectorService {
     @Inject(JOB_CRAWLER_REGISTRY)
     private readonly jobCrawlerRegistry: JobCrawlerRegistry,
     private readonly jobCrawlerExecutionService: JobCrawlerExecutionService,
+    private readonly sourceRuntimeRecorderService: SourceRuntimeRecorderService,
   ) {}
 
   async fetchCompanyJobs(company: CompanyType): Promise<JobPosting[]> {
     const crawler = this.requireCrawler(company);
+    const sourceId = getJobSourceDescriptor(company).id;
 
-    return this.jobCrawlerExecutionService.executeWithRetry(
-      () => crawler.fetchJobs(),
-      `Fetching jobs for ${company}`,
-    );
+    try {
+      const jobs = await this.jobCrawlerExecutionService.executeWithRetry(
+        () => crawler.fetchJobs(),
+        `Fetching jobs for ${company}`,
+      );
+      await this.sourceRuntimeRecorderService.recordSuccess(sourceId);
+      return jobs;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      await this.sourceRuntimeRecorderService.recordFailure(
+        sourceId,
+        errorMessage,
+      );
+      throw error;
+    }
   }
 
   async fetchAllJobs(options?: {
@@ -47,19 +63,25 @@ export class JobPostingCollectorService {
     const results: Array<{ company: CompanyType; jobs: JobPosting[] }> = [];
 
     for (const [index, crawler] of crawlers.entries()) {
+      const sourceId = getJobSourceDescriptor(crawler.company).id;
       try {
         const jobs = await this.jobCrawlerExecutionService.executeWithRetry(
           () => crawler.fetchJobs(),
           `Fetching jobs for ${crawler.company}`,
         );
+        await this.sourceRuntimeRecorderService.recordSuccess(sourceId);
         results.push({ company: crawler.company, jobs });
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        await this.sourceRuntimeRecorderService.recordFailure(
+          sourceId,
+          errorMessage,
+        );
         if (!options?.continueOnError) {
           throw error;
         }
 
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
         this.logger.error(
           `Failed to fetch jobs for ${crawler.company}: ${errorMessage}`,
         );

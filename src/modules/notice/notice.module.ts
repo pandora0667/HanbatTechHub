@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RedisModule } from '../redis/redis.module';
+import { SourceRuntimeModule } from '../source-registry/source-runtime.module';
 import { NoticeController } from './notice.controller';
 import { NoticeService } from './notice.service';
 import { NoticeGroupingService } from './domain/services/notice-grouping.service';
@@ -18,7 +19,7 @@ import { NOTICE_SOURCE_GATEWAY } from './application/ports/notice-source.gateway
 import { NoticeResponseMapper } from './presentation/mappers/notice-response.mapper';
 
 @Module({
-  imports: [RedisModule],
+  imports: [RedisModule, SourceRuntimeModule],
   controllers: [NoticeController],
   providers: [
     NoticeService,

@@ -4,6 +4,7 @@ import {
   MenuCacheRepository,
 } from '../ports/menu-cache.repository';
 import { MenuLoaderService } from '../services/menu-loader.service';
+import { SourceRuntimeRecorderService } from '../../../source-registry/application/services/source-runtime-recorder.service';
 
 @Injectable()
 export class UpdateMenuCacheUseCase {
@@ -11,22 +12,35 @@ export class UpdateMenuCacheUseCase {
     @Inject(MENU_CACHE_REPOSITORY)
     private readonly menuCacheRepository: MenuCacheRepository,
     private readonly menuLoaderService: MenuLoaderService,
+    private readonly sourceRuntimeRecorderService: SourceRuntimeRecorderService,
   ) {}
 
   async execute(referenceDate?: string): Promise<void> {
-    const { mondayDate, menus } =
-      await this.menuLoaderService.loadWeeklyMenu(referenceDate);
-    const collectedAt = new Date().toISOString();
+    try {
+      const { mondayDate, menus } =
+        await this.menuLoaderService.loadWeeklyMenu(referenceDate);
+      const collectedAt = new Date().toISOString();
 
-    await this.menuCacheRepository.setWeeklyMenu(mondayDate, menus);
-    await this.menuCacheRepository.setWeeklyMenuLastUpdate(
-      mondayDate,
-      collectedAt,
-    );
+      await this.menuCacheRepository.setWeeklyMenu(mondayDate, menus);
+      await this.menuCacheRepository.setWeeklyMenuLastUpdate(
+        mondayDate,
+        collectedAt,
+      );
 
-    for (const menu of menus) {
-      await this.menuCacheRepository.setMenuByDate(menu.date, menu);
-      await this.menuCacheRepository.setMenuLastUpdate(menu.date, collectedAt);
+      for (const menu of menus) {
+        await this.menuCacheRepository.setMenuByDate(menu.date, menu);
+        await this.menuCacheRepository.setMenuLastUpdate(menu.date, collectedAt);
+      }
+
+      await this.sourceRuntimeRecorderService.recordSuccess('institution.hanbat.menu');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      await this.sourceRuntimeRecorderService.recordFailure(
+        'institution.hanbat.menu',
+        errorMessage,
+      );
+      throw error;
     }
   }
 }

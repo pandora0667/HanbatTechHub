@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SourceCollectionMode, SourceContext, SourceRiskTier, SourceState, SourceTier } from '../../../common/types/snapshot.types';
+import { SourceRuntimeStatus } from '../types/source-runtime.type';
 
 class SourceHealthItemDto {
   @ApiProperty()
@@ -40,6 +41,12 @@ class SourceHealthItemDto {
   @ApiProperty()
   confidence: number;
 
+  @ApiProperty({ enum: ['active', 'paused', 'disabled'] })
+  effectiveState: SourceState;
+
+  @ApiProperty({ enum: ['unknown', 'healthy', 'degraded', 'failing'] })
+  runtimeStatus: SourceRuntimeStatus;
+
   @ApiProperty({ enum: ['fresh', 'stale', 'missing'] })
   freshnessStatus: string;
 
@@ -51,6 +58,12 @@ class SourceHealthItemDto {
 
   @ApiProperty()
   failureCount: number;
+
+  @ApiProperty()
+  consecutiveFailures: number;
+
+  @ApiProperty({ required: false })
+  lastErrorMessage?: string;
 
   @ApiProperty({ required: false })
   nextEligibleCollectionAt?: string;

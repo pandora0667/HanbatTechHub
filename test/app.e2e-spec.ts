@@ -147,12 +147,15 @@ describe('AppController (e2e)', () => {
       expect.objectContaining({
         sourceId: expect.any(String),
         state: expect.any(String),
+        effectiveState: expect.any(String),
+        runtimeStatus: expect.any(String),
         riskTier: expect.any(String),
         safeCollectionPolicy: expect.any(String),
         maxCollectionsPerDay: expect.any(Number),
         minimumIntervalHours: expect.any(Number),
         freshnessStatus: expect.any(String),
         failureCount: expect.any(Number),
+        consecutiveFailures: expect.any(Number),
       }),
     );
   });
@@ -669,8 +672,18 @@ describe('AppController (e2e)', () => {
           companies: expect.any(Number),
           windowDays: 14,
           totalTopics: expect.any(Number),
+          historyPoints: expect.any(Number),
         }),
         trends: expect.any(Array),
+        history: expect.objectContaining({
+          summary: expect.objectContaining({
+            historyPoints: expect.any(Number),
+            totalItemsDelta: expect.any(Number),
+          }),
+          timeline: expect.any(Array),
+          companyMomentum: expect.any(Array),
+          topicMomentum: expect.any(Array),
+        }),
         sources: expect.any(Array),
       }),
     );

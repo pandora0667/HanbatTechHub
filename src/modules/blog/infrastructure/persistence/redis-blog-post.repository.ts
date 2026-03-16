@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '../../../redis/redis.service';
 import { appendRedisKey } from '../../../../common/utils/redis-key.util';
-import { DEFAULT_REDIS_TTL, REDIS_KEYS } from '../../constants/blog.constant';
+import {
+  BLOG_CONTENT_HISTORY_LIMIT,
+  BLOG_CONTENT_HISTORY_TTL,
+  DEFAULT_REDIS_TTL,
+  REDIS_KEYS,
+} from '../../constants/blog.constant';
 import { BlogPost, RedisBlogPost } from '../../interfaces/blog.interface';
 import { BlogPostRepository } from '../../application/ports/blog-post.repository';
+import { ContentSnapshotHistoryEntry } from '../../../content-intelligence/domain/models/content-snapshot-history.model';
 
 @Injectable()
 export class RedisBlogPostRepository implements BlogPostRepository {
@@ -57,6 +63,36 @@ export class RedisBlogPostRepository implements BlogPostRepository {
       appendRedisKey(REDIS_KEYS.BLOG_LAST_UPDATE, company),
       timestamp,
       DEFAULT_REDIS_TTL,
+    );
+  }
+
+  async getContentSnapshotHistory(
+    limit = BLOG_CONTENT_HISTORY_LIMIT,
+  ): Promise<ContentSnapshotHistoryEntry[]> {
+    const history = await this.redisService.get<ContentSnapshotHistoryEntry[]>(
+      REDIS_KEYS.BLOG_CONTENT_HISTORY,
+    );
+
+    if (!Array.isArray(history)) {
+      return [];
+    }
+
+    return history.slice(0, limit);
+  }
+
+  async appendContentSnapshotHistory(
+    entry: ContentSnapshotHistoryEntry,
+  ): Promise<void> {
+    const history = await this.getContentSnapshotHistory(BLOG_CONTENT_HISTORY_LIMIT);
+    const nextHistory =
+      history[0]?.snapshot.collectedAt === entry.snapshot.collectedAt
+        ? [entry, ...history.slice(1)]
+        : [entry, ...history];
+
+    await this.redisService.set(
+      REDIS_KEYS.BLOG_CONTENT_HISTORY,
+      nextHistory.slice(0, BLOG_CONTENT_HISTORY_LIMIT),
+      BLOG_CONTENT_HISTORY_TTL,
     );
   }
 }

@@ -122,7 +122,9 @@ import { UpdateInstitutionDiscoveryCacheUseCase } from '../src/modules/instituti
 import { ContentIntelligenceService } from '../src/modules/content-intelligence/content-intelligence.service';
 import { GetContentFeedUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-feed.use-case';
 import { GetContentTrendsUseCase } from '../src/modules/content-intelligence/application/use-cases/get-content-trends.use-case';
+import { ContentSnapshotHistoryBuilderService } from '../src/modules/content-intelligence/domain/services/content-snapshot-history-builder.service';
 import { ContentTopicExtractorService } from '../src/modules/content-intelligence/domain/services/content-topic-extractor.service';
+import { SourceRuntimeRecorderService } from '../src/modules/source-registry/application/services/source-runtime-recorder.service';
 
 const RUN_LIVE_SMOKE = process.env.RUN_LIVE_SMOKE === '1';
 const RUN_LIVE_SMOKE_COUPANG = process.env.RUN_LIVE_SMOKE_COUPANG === '1';
@@ -262,6 +264,7 @@ describeLive('Live Integration Smoke', () => {
         BlogSourceCatalogService,
         RssBlogFeedReaderService,
         BlogResponseMapper,
+        ContentSnapshotHistoryBuilderService,
         {
           provide: BLOG_POST_REPOSITORY,
           useExisting: RedisBlogPostRepository,
@@ -341,6 +344,7 @@ describeLive('Live Integration Smoke', () => {
         GetContentFeedUseCase,
         GetContentTrendsUseCase,
         ContentTopicExtractorService,
+        SourceRuntimeRecorderService,
         { provide: RedisService, useClass: InMemoryRedisService },
         { provide: TranslationService, useValue: translationServiceStub },
       ],
@@ -471,6 +475,8 @@ describeLive('Live Integration Smoke', () => {
         expect.objectContaining({
           sourceId: 'institution.hanbat.menu',
           state: 'active',
+          effectiveState: expect.any(String),
+          runtimeStatus: expect.any(String),
           riskTier: expect.any(String),
           safeCollectionPolicy: expect.any(String),
           lastSuccessAt: expect.any(String),
@@ -478,6 +484,8 @@ describeLive('Live Integration Smoke', () => {
         expect.objectContaining({
           sourceId: 'institution.hanbat.notice',
           state: 'active',
+          effectiveState: expect.any(String),
+          runtimeStatus: expect.any(String),
           riskTier: expect.any(String),
           safeCollectionPolicy: expect.any(String),
           lastSuccessAt: expect.any(String),
@@ -650,7 +658,18 @@ describeLive('Live Integration Smoke', () => {
     expect(feed.sources.length).toBeGreaterThan(0);
     expect(trends.summary.totalItems).toBeGreaterThan(0);
     expect(trends.summary.totalTopics).toBeGreaterThan(0);
+    expect(trends.summary.historyPoints).toBeGreaterThan(0);
     expect(trends.trends.length).toBeGreaterThan(0);
+    expect(trends.history).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          historyPoints: expect.any(Number),
+        }),
+        timeline: expect.any(Array),
+        companyMomentum: expect.any(Array),
+        topicMomentum: expect.any(Array),
+      }),
+    );
     expect(trends.sources.length).toBeGreaterThan(0);
   });
 

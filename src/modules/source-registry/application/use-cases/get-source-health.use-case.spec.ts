@@ -27,6 +27,7 @@ describe('GetSourceHealthUseCase', () => {
   };
   const sourceRuntimeStatusService = {
     getLastSuccessAt: jest.fn(),
+    getRuntimeRecord: jest.fn(),
   };
 
   let useCase: GetSourceHealthUseCase;
@@ -55,6 +56,7 @@ describe('GetSourceHealthUseCase', () => {
     sourceRuntimeStatusService.getLastSuccessAt.mockResolvedValue(
       new Date().toISOString(),
     );
+    sourceRuntimeStatusService.getRuntimeRecord.mockResolvedValue(null);
 
     const result = await useCase.execute();
 
@@ -62,9 +64,12 @@ describe('GetSourceHealthUseCase', () => {
       expect.objectContaining({
         sourceId: 'opportunity.jobs.naver',
         state: 'active',
+        effectiveState: 'active',
         riskTier: 'medium',
+        runtimeStatus: 'healthy',
         freshnessStatus: expect.any(String),
         failureCount: 0,
+        consecutiveFailures: 0,
       }),
     );
   });

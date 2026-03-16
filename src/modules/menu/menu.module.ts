@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MenuController } from './menu.controller';
 import { MenuService } from './menu.service';
 import { RedisModule } from '../redis/redis.module';
+import { SourceRuntimeModule } from '../source-registry/source-runtime.module';
 import { MenuCalendarService } from './domain/services/menu-calendar.service';
 import { MenuResponseFactoryService } from './domain/services/menu-response-factory.service';
 import { MenuLoaderService } from './application/services/menu-loader.service';
@@ -16,7 +17,7 @@ import { MENU_SOURCE_GATEWAY } from './application/ports/menu-source.gateway';
 import { MenuResponseMapper } from './presentation/mappers/menu-response.mapper';
 
 @Module({
-  imports: [RedisModule],
+  imports: [RedisModule, SourceRuntimeModule],
   controllers: [MenuController],
   providers: [
     MenuService,

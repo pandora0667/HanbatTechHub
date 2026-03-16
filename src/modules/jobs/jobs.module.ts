@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RedisModule } from '../redis/redis.module';
+import { SourceRuntimeModule } from '../source-registry/source-runtime.module';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './services/jobs.service';
 import { CRAWLER_PROVIDERS } from './crawlers';
@@ -22,7 +23,7 @@ import { JOB_CRAWLER_REGISTRY } from './application/ports/job-crawler-registry';
 import { JOB_POSTING_CACHE_REPOSITORY } from './application/ports/job-posting-cache.repository';
 
 @Module({
-  imports: [RedisModule],
+  imports: [RedisModule, SourceRuntimeModule],
   controllers: [JobsController],
   providers: [
     JobsService,
